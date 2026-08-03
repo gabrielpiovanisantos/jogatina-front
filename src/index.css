@@ -1,0 +1,33 @@
+/* src/index.css - CSS Global da Aplicação */
+
+/* O seletor "body" afeta a página inteira do navegador */
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  /* Configurações da Imagem de Fundo */
+  background-image: url('/root.webp'); /* Nome exato do seu arquivo na pasta public */
+  background-size: cover; /* Faz a imagem cobrir a tela inteira sem esticar errado */
+  background-position: center; /* Mantém a imagem sempre centralizada */
+  background-attachment: fixed; /* A imagem fica fixa se a página rolar para baixo */
+  background-repeat: no-repeat; /* Evita que a imagem se repita como um mosaico */
+
+  /* Centraliza o conteúdo principal na tela */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh; /* Garante que ocupa a altura toda da tela */
+  display: flex;
+  align-items: center; /* Centraliza perfeitamente na vertical */
+  justify-content: center; /* Centraliza perfeitamente na horizontal */
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Você pode colocar outras coisas globais aqui, como botões padrão ou cores do tema */
