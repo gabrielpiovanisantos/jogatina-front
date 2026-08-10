@@ -191,3 +191,36 @@
     background-color: rgba(255, 138, 128, 0.15); /* Fundo vermelho bem transparente ao passar o mouse */
 }
 
+.btn-voltar {
+    background-color: #4a7c59;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    margin-bottom: 20px;
+    display: block;
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.btn-voltar:hover {
+    background-color: #386044;
+}
+
+.info-mesa {
+    background-color: #1b2e15;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border-left: 4px solid #4a7c59;
+}
+
+.info-mesa p {
+    margin: 0;
+    color: #c8e6c9;
+    font-size: 14px;
+}

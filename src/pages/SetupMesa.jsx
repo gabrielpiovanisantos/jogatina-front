@@ -8,7 +8,7 @@ const JOGADORES_BD_MOCK = [
     'Fernanda', 'Gabriel', 'Hugo', 'Isabela', 'João', 'Maria'
 ];
 
-export default function SetupMesa() {
+export default function SetupMesa({ dadosMesa, onVoltar }) {
     const [jogadoresConfirmados, setJogadoresConfirmados] = useState([]);
     const [listaOficialJogadores, setListaOficialJogadores] = useState([]);
 
@@ -111,7 +111,18 @@ export default function SetupMesa() {
 
     return (
             <div className="cartao-setup">
-                <h2>Root</h2>
+                {onVoltar && (
+                    <button onClick={onVoltar} className="btn-voltar">
+                        ← Voltar
+                    </button>
+                )}
+                
+                {dadosMesa && (
+                    <div className="info-mesa">
+                        <p>📅 <strong>{dadosMesa.data}</strong> | 🎲 <strong>{dadosMesa.jogo}</strong> | 👥 <strong>{dadosMesa.quantidade} pessoas</strong></p>
+                    </div>
+                )}
+                
                 <p>Adicione quem vai jogar para organizarmos as mesas.</p>
 
                 <form onSubmit={adicionarJogador} className="formulario-linha">
