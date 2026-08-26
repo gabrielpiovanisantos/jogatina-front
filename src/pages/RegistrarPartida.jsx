@@ -1,12 +1,6 @@
 import { useState } from 'react';
-
-// Mock temporário: depois vamos puxar isso do GET /players do Spring Boot
-const JOGADORES_MOCK = [
-    { id: 1, name: 'João' },
-    { id: 2, name: 'Maria' },
-    { id: 3, name: 'Carlos' },
-    { id: 4, name: 'Ana' }
-];
+import apiService from '../services/api.js';
+import { MOCK_PLAYERS } from '../services/mockData.js';
 
 const FACCOES_ROOT = [
     'Marquise de Cat',
@@ -59,22 +53,12 @@ export default function RegistrarPartida() {
         };
 
         try {
-            const response = await fetch('http://localhost:8080/api/games/finish', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                alert('🏆 Partida registrada com sucesso!');
-                // Reseta o formulário após o sucesso
-                setResultados([{ playerId: '', faction: '', points: 0, won: false }]);
-            } else {
-                const erroMsg = await response.text();
-                alert(`❌ Erro do servidor: ${erroMsg}`);
-            }
+            await apiService.registrarPartida(payload);
+            alert('🏆 Partida registrada com sucesso!');
+            // Reseta o formulário após o sucesso
+            setResultados([{ playerId: '', faction: '', points: 0, won: false }]);
         } catch (error) {
-            alert('⚠️ Falha ao conectar. O Spring Boot está rodando?');
+            alert(`⚠️ Falha ao registrar partida: ${error.message}`);
             console.error(error);
         }
     };
@@ -95,7 +79,7 @@ export default function RegistrarPartida() {
                                 onChange={(e) => atualizarCampo(index, 'playerId', e.target.value)}
                             >
                                 <option value="">Selecione o Jogador</option>
-                                {JOGADORES_MOCK.map(j => (
+                                {MOCK_PLAYERS.map(j => (
                                     <option key={j.id} value={j.id}>{j.name}</option>
                                 ))}
                             </select>

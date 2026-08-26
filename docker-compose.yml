@@ -1,0 +1,21 @@
+# Sobe o frontend junto com o backend (repo irmão ../jogatina), que já tem
+# seu próprio docker-compose (serviço "app" + Postgres). O "include" junta os
+# dois na mesma rede/projeto, então o frontend fala com o backend por "app:8080".
+#
+# Como o backend usa variáveis (POSTGRES_DB etc.) definidas em ../jogatina/.env,
+# rode a partir desta pasta com:
+#   docker compose --env-file ../jogatina/.env up --build
+include:
+  - ../jogatina/docker-compose.yml
+
+services:
+  frontend:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - BACKEND_URL=http://app:8080
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped

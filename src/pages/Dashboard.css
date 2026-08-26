@@ -1,0 +1,105 @@
+.dashboard-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.dashboard-container h1 {
+    text-align: center;
+    color: #333;
+    font-size: 2.5rem;
+    margin-bottom: 30px;
+}
+
+.erro-mensagem {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border-left: 4px solid #c62828;
+}
+
+.seletor-jogador {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.seletor-jogador label {
+    font-weight: 600;
+    color: #333;
+}
+
+.seletor-jogador select {
+    padding: 10px 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    min-width: 200px;
+}
+
+.cards-estatisticas {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.card-estatistica {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border-radius: 8px;
+    padding: 30px 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-icone {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.card-valor {
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: #2196F3;
+}
+
+.card-rotulo {
+    margin-top: 8px;
+    color: #666;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.mensagem-vazia {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-size: 1.1rem;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+}
+
+@media (max-width: 600px) {
+    .dashboard-container {
+        padding: 10px;
+    }
+
+    .dashboard-container h1 {
+        font-size: 1.8rem;
+        margin-bottom: 20px;
+    }
+
+    .cards-estatisticas {
+        grid-template-columns: 1fr;
+    }
+
+    .seletor-jogador select {
+        min-width: 150px;
+    }
+}

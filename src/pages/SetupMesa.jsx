@@ -1,12 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SetupMesa.css'; // Importando nosso novo arquivo de estilos!
-
-const USAR_API_BACKEND = false;
-
-const JOGADORES_BD_MOCK = [
-    'Aline', 'Bruno', 'Carlos', 'Daniela', 'Eduardo',
-    'Fernanda', 'Gabriel', 'Hugo', 'Isabela', 'João', 'Maria'
-];
+import apiService from '../services/api.js';
+import { MOCK_PLAYER_NAMES } from '../services/mockData.js';
 
 export default function SetupMesa({ dadosMesa, onVoltar }) {
     const [jogadoresConfirmados, setJogadoresConfirmados] = useState([]);
@@ -18,27 +13,9 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
     const [indiceDestacado, setIndiceDestacado] = useState(-1);
 
     useEffect(() => {
-        if (USAR_API_BACKEND) {
-            const buscarJogadoresDaAPI = async () => {
-                try {
-                    const response = await fetch('http://localhost:8080/api/players');
-                    if (response.ok) {
-                        const dados = await response.json();
-                        const nomesDaAPI = dados.map(jogador => jogador.name);
-                        setListaOficialJogadores(nomesDaAPI);
-                    } else {
-                        console.warn('⚠️ Erro na API. Usando lista estática.');
-                        setListaOficialJogadores(JOGADORES_BD_MOCK);
-                    }
-                } catch (erro) {
-                    console.error('❌ Backend inacessível. Usando lista estática.', erro);
-                    setListaOficialJogadores(JOGADORES_BD_MOCK);
-                }
-            };
-            buscarJogadoresDaAPI();
-        } else {
-            setListaOficialJogadores(JOGADORES_BD_MOCK);
-        }
+        // Sempre usar lista mock para autocomplete (não há endpoint específico)
+        // O backend será chamado apenas quando organizar as mesas
+        setListaOficialJogadores(MOCK_PLAYER_NAMES);
     }, []);
 
     const lidarComDigitacao = (e) => {
@@ -105,8 +82,38 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
         setJogadoresConfirmados(jogadoresConfirmados.filter(j => j.id !== idParaRemover));
     };
 
-    const confirmarLista = () => {
-        alert(`Temos ${jogadoresConfirmados.length} pessoa(s) confirmada(s)! Bora organizar as mesas.`);
+    const [mesasOrganizadas, setMesasOrganizadas] = useState(null);
+    const [carregando, setCarregando] = useState(false);
+    const [erro, setErro] = useState(null);
+
+    const confirmarLista = async () => {
+        if (jogadoresConfirmados.length < 3) {
+            alert('É necessário pelo menos 3 jogadores para organizar mesas!');
+            return;
+        }
+
+        setCarregando(true);
+        setErro(null);
+
+        try {
+            const dados = await apiService.organizarMesas(
+                jogadoresConfirmados.map(j => ({
+                    id: j.id,
+                    name: j.name
+                }))
+            );
+            setMesasOrganizadas(dados.groups);
+        } catch (error) {
+            setErro(`⚠️ Falha ao conectar com o servidor: ${error.message}`);
+            console.error(error);
+        } finally {
+            setCarregando(false);
+        }
+    };
+
+    const voltarParaLista = () => {
+        setMesasOrganizadas(null);
+        setErro(null);
     };
 
     return (
@@ -123,65 +130,142 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
                     </div>
                 )}
                 
-                <p>Adicione quem vai jogar para organizarmos as mesas.</p>
+                {!mesasOrganizadas ? (
+                    <>
+                        <p>Adicione quem vai jogar para organizarmos as mesas.</p>
 
-                <form onSubmit={adicionarJogador} className="formulario-linha">
-                    <div className="input-container">
-                        <input
-                            type="text"
-                            placeholder="Nome do jogador..."
-                            className="input-nome"
-                            value={nomeDigitado}
-                            onChange={lidarComDigitacao}
-                            onKeyDown={lidarComTeclado}
-                            onBlur={() => setTimeout(() => {
-                                setMostrarSugestoes(false);
-                                setIndiceDestacado(-1);
-                            }, 150)}
-                            onFocus={() => { if (nomeDigitado) setMostrarSugestoes(true) }}
-                        />
+                        {erro && <div style={{ color: 'red', marginBottom: '20px' }}>⚠️ {erro}</div>}
 
-                        {mostrarSugestoes && sugestoes.length > 0 && (
-                            <ul className="lista-sugestoes">
-                                {sugestoes.map((sugestao, index) => (
-                                    <li
-                                        key={index}
-                                        className="item-sugestao"
-                                        onMouseDown={() => selecionarSugestao(sugestao)}
-                                        style={{ backgroundColor: index === indiceDestacado ? '#e0f7fa' : 'white' }}
-                                        onMouseEnter={() => setIndiceDestacado(index)}
-                                        onMouseLeave={() => setIndiceDestacado(-1)}
-                                    >
-                                        {sugestao}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
+                        <form onSubmit={adicionarJogador} className="formulario-linha">
+                            <div className="input-container">
+                                <input
+                                    type="text"
+                                    placeholder="Nome do jogador..."
+                                    className="input-nome"
+                                    value={nomeDigitado}
+                                    onChange={lidarComDigitacao}
+                                    onKeyDown={lidarComTeclado}
+                                    onBlur={() => setTimeout(() => {
+                                        setMostrarSugestoes(false);
+                                        setIndiceDestacado(-1);
+                                    }, 150)}
+                                    onFocus={() => { if (nomeDigitado) setMostrarSugestoes(true) }}
+                                />
 
-                    <button
-                        type="submit"
-                        className="btn-adicionar"
-                        disabled={!nomeDigitado.trim()}
-                    >
-                        +
-                    </button>
-                </form>
+                                {mostrarSugestoes && sugestoes.length > 0 && (
+                                    <ul className="lista-sugestoes">
+                                        {sugestoes.map((sugestao, index) => (
+                                            <li
+                                                key={index}
+                                                className="item-sugestao"
+                                                onMouseDown={() => selecionarSugestao(sugestao)}
+                                                style={{ backgroundColor: index === indiceDestacado ? '#e0f7fa' : 'white' }}
+                                                onMouseEnter={() => setIndiceDestacado(index)}
+                                                onMouseLeave={() => setIndiceDestacado(-1)}
+                                            >
+                                                {sugestao}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
 
-                <div className="painel-totais">
-                    <h4>Total de confirmados: {jogadoresConfirmados.length}</h4>
-                </div>
-
-                <ul className="lista-jogadores">
-                    {jogadoresConfirmados.map(jogador => (
-                        <li key={jogador.id} className="item-jogador">
-                            <span>{jogador.name}</span>
-                            <button onClick={() => removerJogador(jogador.id)} className="btn-remover">
-                                Remover
+                            <button
+                                type="submit"
+                                className="btn-adicionar"
+                                disabled={!nomeDigitado.trim()}
+                            >
+                                +
                             </button>
-                        </li>
-                    ))}
-                </ul>
+                        </form>
+
+                        <div className="painel-totais">
+                            <h4>Total de confirmados: {jogadoresConfirmados.length}</h4>
+                        </div>
+
+                        <ul className="lista-jogadores">
+                            {jogadoresConfirmados.map(jogador => (
+                                <li key={jogador.id} className="item-jogador">
+                                    <span>{jogador.name}</span>
+                                    <button onClick={() => removerJogador(jogador.id)} className="btn-remover">
+                                        Remover
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+
+                        <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <button
+                                onClick={confirmarLista}
+                                disabled={jogadoresConfirmados.length < 3 || carregando}
+                                style={{
+                                    backgroundColor: jogadoresConfirmados.length < 3 ? '#ccc' : '#4CAF50',
+                                    color: 'white',
+                                    padding: '10px 20px',
+                                    border: 'none',
+                                    borderRadius: '5px',
+                                    cursor: jogadoresConfirmados.length < 3 ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {carregando ? '⏳ Organizando...' : '✓ Organizar Mesas'}
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <h2>Mesas Organizadas 🎲</h2>
+                        {erro && <div style={{ color: 'red', marginBottom: '20px' }}>⚠️ {erro}</div>}
+                        
+                        <div style={{ marginBottom: '20px' }}>
+                            {mesasOrganizadas.map((mesa, indexMesa) => (
+                                <div
+                                    key={indexMesa}
+                                    style={{
+                                        border: '2px solid #2196F3',
+                                        borderRadius: '8px',
+                                        padding: '15px',
+                                        marginBottom: '15px',
+                                        backgroundColor: '#f0f8ff'
+                                    }}
+                                >
+                                    <h3 style={{ marginTop: 0 }}>🎮 Mesa {indexMesa + 1} ({mesa.length} jogadores)</h3>
+                                    <ul style={{ listStyle: 'none', padding: 0 }}>
+                                        {mesa.map((jogador, indexJogador) => (
+                                            <li
+                                                key={indexJogador}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    backgroundColor: '#fff',
+                                                    marginBottom: '5px',
+                                                    borderRadius: '4px',
+                                                    borderLeft: '4px solid #2196F3'
+                                                }}
+                                            >
+                                                {jogador.name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '20px' }}>
+                            <button
+                                onClick={voltarParaLista}
+                                style={{
+                                    backgroundColor: '#ff9800',
+                                    color: 'white',
+                                    padding: '10px 20px',
+                                    border: 'none',
+                                    borderRadius: '5px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                ← Reorganizar
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
     );
 }
