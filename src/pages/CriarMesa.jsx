@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import './CriarMesa.css';
 
+// Datas do <input type="date"> vêm como "AAAA-MM-DD" e representam um dia no
+// calendário local. new Date("AAAA-MM-DD") as interpreta como meia-noite UTC
+// (dia anterior em fusos negativos, como o do Brasil), então convertemos à mão.
+const paraAAAAMMDD = (d) => [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0')
+].join('-');
+
+const formatarDataBR = (aaaammdd) => aaaammdd.split('-').reverse().join('/');
+
 export default function CriarMesa({ onContinuar }) {
     const [data, setData] = useState('');
     const [jogo, setJogo] = useState('');
@@ -8,8 +19,7 @@ export default function CriarMesa({ onContinuar }) {
     const [mostraResumo, setMostraResumo] = useState(false);
 
     const obterDataMinima = () => {
-        const hoje = new Date();
-        return hoje.toISOString().split('T')[0];
+        return paraAAAAMMDD(new Date());
     };
 
     const handleSubmit = (e) => {
@@ -91,7 +101,7 @@ export default function CriarMesa({ onContinuar }) {
                     <div className="resumo-mesa">
                         <div className="resumo-item">
                             <span className="resumo-label">📅 Data:</span>
-                            <span className="resumo-valor">{new Date(data).toLocaleDateString('pt-BR')}</span>
+                            <span className="resumo-valor">{formatarDataBR(data)}</span>
                         </div>
                         <div className="resumo-item">
                             <span className="resumo-label">🎲 Jogo:</span>
