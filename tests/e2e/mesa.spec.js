@@ -20,10 +20,10 @@ async function adicionarJogadores(page, nomes) {
   }
 }
 
-test.describe('Criar mesa e organizar jogadores', () => {
+test.describe('Create table and organize players', () => {
   test.beforeEach(() => limparBanco());
 
-  test('fluxo completo: criar mesa → adicionar jogadores → mesas organizadas pelo backend', async ({ page }) => {
+  test('given a new table when adding players and organizing then shows the tables organized by the backend', async ({ page }) => {
     await criarMesa(page, 5);
 
     await expect(page.getByRole('heading', { name: 'Resumo da Mesa' })).toBeVisible();
@@ -54,7 +54,7 @@ test.describe('Criar mesa e organizar jogadores', () => {
     await expect(page.getByRole('heading', { level: 3 })).toHaveText(['🎮 Mesa 1 (5 jogadores)']);
   });
 
-  test('reorganiza depois de remover um jogador', async ({ page }) => {
+  test('given organized tables when removing a player and organizing again then reorganizes the tables', async ({ page }) => {
     await criarMesa(page, 10);
     await page.getByRole('button', { name: 'Confirmar e Continuar' }).click();
     const nomes = ['Ana', 'Bruno', 'Carla', 'Diego', 'Eva', 'Fábio', 'Gil', 'Hugo', 'Iris', 'Júlia'];
@@ -74,7 +74,7 @@ test.describe('Criar mesa e organizar jogadores', () => {
     await expect(page.getByText('Júlia')).toHaveCount(0);
   });
 
-  test('não permite organizar com menos de 3 jogadores', async ({ page }) => {
+  test('given fewer than 3 players when on the player list then does not allow organizing', async ({ page }) => {
     await criarMesa(page, 2);
     await page.getByRole('button', { name: 'Confirmar e Continuar' }).click();
     await adicionarJogadores(page, ['Ana', 'Bruno']);
@@ -82,7 +82,7 @@ test.describe('Criar mesa e organizar jogadores', () => {
     await expect(page.getByRole('button', { name: /Organizar Mesas/ })).toBeDisabled();
   });
 
-  test('mostra erro amigável quando o backend está fora do ar', async ({ page }) => {
+  test('given the backend is down when organizing then shows a friendly error', async ({ page }) => {
     await page.route('**/api/setup/organize', route => route.abort('connectionrefused'));
     await criarMesa(page, 3);
     await page.getByRole('button', { name: 'Confirmar e Continuar' }).click();
@@ -96,13 +96,13 @@ test.describe('Criar mesa e organizar jogadores', () => {
 
   // O contexto roda em America/Sao_Paulo (UTC-3): datas tratadas como UTC
   // aparecem com um dia de diferença.
-  test('resumo mostra a data escolhida no fuso do usuário', async ({ page }) => {
+  test('given a chosen date when continuing then the summary shows it in the user time zone', async ({ page }) => {
     await criarMesa(page, 4);
 
     await expect(page.locator('.resumo-valor').first()).toHaveText(`25/12/${ANO_QUE_VEM}`);
   });
 
-  test('data mínima é o dia de hoje no fuso do usuário, mesmo à noite', async ({ page }) => {
+  test('given it is night in the user time zone when creating a table then the minimum date is today', async ({ page }) => {
     // 22h30 em Brasília já é o dia seguinte em UTC.
     await page.clock.setFixedTime(new Date('2026-12-24T22:30:00-03:00'));
     await page.goto('/');

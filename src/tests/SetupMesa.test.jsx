@@ -11,7 +11,7 @@ vi.mock('../services/api.js', () => ({
   }
 }));
 
-describe('Componente SetupMesa', () => {
+describe('SetupMesa component', () => {
   const mockDadosMesa = {
     data: '2026-08-15',
     jogo: 'Root',
@@ -28,13 +28,13 @@ describe('Componente SetupMesa', () => {
     vi.restoreAllMocks();
   });
 
-  it('deve renderizar o componente', () => {
+  it('given table data when rendering then shows the player list prompt', () => {
     render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
 
     expect(screen.getByText(/Adicione quem vai jogar/i)).toBeInTheDocument();
   });
 
-  it('deve exibir informações da mesa se fornecidas', () => {
+  it('given table data when rendering then shows the table information', () => {
     render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
 
     expect(screen.getByText(/2026-08-15/i)).toBeInTheDocument();
@@ -42,14 +42,14 @@ describe('Componente SetupMesa', () => {
     expect(screen.getByText(/6 pessoas/i)).toBeInTheDocument();
   });
 
-  it('deve ter input para adicionar jogador', () => {
+  it('given the component when rendering then shows the player name input', () => {
     render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
 
     const input = screen.getByPlaceholderText(/Nome do jogador/i);
     expect(input).toBeInTheDocument();
   });
 
-  it('deve adicionar jogador quando input é preenchido e botão clicado', async () => {
+  it('given a typed name when clicking add then adds the player', async () => {
     const user = userEvent.setup();
     render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
 
@@ -77,7 +77,7 @@ describe('Componente SetupMesa', () => {
     expect(screen.getByText('João')).toBeInTheDocument();
   });
 
-  it('deve impedir adicionar jogador duplicado', async () => {
+  it('given a player already in the list when adding the same name then prevents the duplicate', async () => {
     const user = userEvent.setup();
     render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
 
@@ -96,7 +96,7 @@ describe('Componente SetupMesa', () => {
     alertSpy.mockRestore();
   });
 
-  it('deve remover jogador quando botão remover é clicado', async () => {
+  it('given a player in the list when clicking remove then removes the player', async () => {
     const user = userEvent.setup();
     render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
 
@@ -116,7 +116,7 @@ describe('Componente SetupMesa', () => {
     });
   });
 
-  it('deve desabilitar botão organizar com menos de 3 jogadores', async () => {
+  it('given fewer than 3 players when on the list then disables the organize button', async () => {
     const user = userEvent.setup();
     render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
 
@@ -143,7 +143,7 @@ describe('Componente SetupMesa', () => {
     expect(botaoOrganizar).not.toBeDisabled();
   });
 
-  it('deve chamar organizarMesas quando botão organizar é clicado', async () => {
+  it('given enough players when clicking organize then calls organizarMesas', async () => {
     const user = userEvent.setup();
     apiService.default.organizarMesas.mockResolvedValueOnce({
       groups: [[], []]
@@ -170,7 +170,7 @@ describe('Componente SetupMesa', () => {
     });
   });
 
-  it('deve exibir mesas organizadas após chamada de API', async () => {
+  it('given a successful API call when organizing then shows the organized tables', async () => {
     const user = userEvent.setup();
     const mockGroups = [
       [
@@ -209,7 +209,7 @@ describe('Componente SetupMesa', () => {
     });
   });
 
-  it('deve exibir erro quando chamada de API falha', async () => {
+  it('given a failed API call when organizing then shows the error message', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
     apiService.default.organizarMesas.mockRejectedValueOnce(
@@ -236,7 +236,7 @@ describe('Componente SetupMesa', () => {
     });
   });
 
-  it('deve permitir reorganizar mesas', async () => {
+  it('given organized tables when clicking reorganize then returns to the player list', async () => {
     const user = userEvent.setup();
     apiService.default.organizarMesas.mockResolvedValueOnce({
       groups: [[{ id: 1, name: 'João' }, { id: 2, name: 'Maria' }, { id: 3, name: 'Pedro' }]]
@@ -267,7 +267,7 @@ describe('Componente SetupMesa', () => {
     expect(screen.queryByText(/Mesas Organizadas/i)).not.toBeInTheDocument();
   });
 
-  it('deve contar total de confirmados corretamente', async () => {
+  it('given players being added when on the list then updates the confirmed total', async () => {
     const user = userEvent.setup();
     render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
 

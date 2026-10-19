@@ -10,7 +10,7 @@ vi.mock('../services/api.js', () => ({
   }
 }));
 
-describe('Componente Ranking', () => {
+describe('Ranking component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -19,14 +19,14 @@ describe('Componente Ranking', () => {
     vi.restoreAllMocks();
   });
 
-  it('deve renderizar o componente', async () => {
+  it('given an empty ranking when rendering then shows the title', async () => {
     apiService.default.obterRanking.mockResolvedValueOnce([]);
     render(<Ranking />);
 
     expect(await screen.findByText(/🏆 Ranking/i)).toBeInTheDocument();
   });
 
-  it('deve mostrar mensagem de carregamento inicial', () => {
+  it('given a pending request when rendering then shows the loading message', () => {
     apiService.default.obterRanking.mockImplementationOnce(
       () => new Promise(() => {}) // Nunca resolve
     );
@@ -35,7 +35,7 @@ describe('Componente Ranking', () => {
     expect(screen.getByText(/⏳ Carregando ranking/i)).toBeInTheDocument();
   });
 
-  it('deve renderizar tabela com ranking de jogadores', async () => {
+  it('given a ranking when rendering then shows the players table', async () => {
     const mockRanking = [
       { playerId: 1, playerName: 'João', totalScore: 1500, totalGames: 10, totalVictories: 7 },
       { playerId: 2, playerName: 'Maria', totalScore: 1200, totalGames: 8, totalVictories: 5 },
@@ -58,7 +58,7 @@ describe('Componente Ranking', () => {
     expect(screen.getByText('1000')).toBeInTheDocument();
   });
 
-  it('deve exibir posições com medalhas corretas', async () => {
+  it('given a ranking when rendering then shows medals for the top positions', async () => {
     const mockRanking = [
       { playerId: 1, playerName: 'João', totalScore: 1500, totalGames: 10, totalVictories: 7 },
       { playerId: 2, playerName: 'Maria', totalScore: 1200, totalGames: 8, totalVictories: 5 },
@@ -75,7 +75,7 @@ describe('Componente Ranking', () => {
     });
   });
 
-  it('deve exibir mensagem quando ranking está vazio', async () => {
+  it('given an empty ranking when rendering then shows the empty message', async () => {
     apiService.default.obterRanking.mockResolvedValueOnce([]);
 
     render(<Ranking />);
@@ -85,7 +85,7 @@ describe('Componente Ranking', () => {
     });
   });
 
-  it('deve exibir mensagem de erro quando falha a requisição', async () => {
+  it('given a failed request when rendering then shows the error message', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     apiService.default.obterRanking.mockRejectedValueOnce(
       new Error('Erro ao carregar ranking')
@@ -98,7 +98,7 @@ describe('Componente Ranking', () => {
     });
   });
 
-  it('deve chamar obterRanking apenas uma vez ao montar', async () => {
+  it('given the component when mounting then calls obterRanking only once', async () => {
     apiService.default.obterRanking.mockResolvedValueOnce([]);
 
     render(<Ranking />);
@@ -108,7 +108,7 @@ describe('Componente Ranking', () => {
     });
   });
 
-  it('deve exibir corretamente dados de pontos, partidas e vitórias', async () => {
+  it('given a ranking when rendering then shows points, games and victories', async () => {
     const mockRanking = [
       { playerId: 1, playerName: 'João', totalScore: 1500, totalGames: 10, totalVictories: 7 }
     ];
@@ -124,7 +124,7 @@ describe('Componente Ranking', () => {
     });
   });
 
-  it('deve ter headers de tabela corretos', async () => {
+  it('given a ranking when rendering then shows the table headers', async () => {
     apiService.default.obterRanking.mockResolvedValueOnce([]);
 
     render(<Ranking />);

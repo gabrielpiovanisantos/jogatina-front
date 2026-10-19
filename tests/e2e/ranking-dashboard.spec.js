@@ -5,12 +5,12 @@ import { CENARIO_RANKING, RANKING_ESPERADO } from '../support/cenario.js';
 const linhas = page => page.locator('tbody tr.linha-jogador');
 const cartao = (page, rotulo) => page.locator('.card-estatistica', { hasText: rotulo }).locator('.card-valor');
 
-test.describe('Ranking e Dashboard com dados do backend', () => {
+test.describe('Ranking and Dashboard with backend data', () => {
   test.beforeEach(async () => {
     await limparBanco();
   });
 
-  test('ranking lista os jogadores na ordem calculada pelo backend', async ({ page }) => {
+  test('given played games when opening the ranking then lists players in the order calculated by the backend', async ({ page }) => {
     await semear(CENARIO_RANKING);
     await page.goto('/');
 
@@ -21,7 +21,7 @@ test.describe('Ranking e Dashboard com dados do backend', () => {
     await expect(linhas(page).locator('.partidas')).toHaveText(RANKING_ESPERADO.map(j => String(j.totalGames)));
   });
 
-  test('ranking mostra pontos e vitórias', async ({ page }) => {
+  test('given played games when opening the ranking then shows points and victories', async ({ page }) => {
     await semear(CENARIO_RANKING);
     await page.goto('/');
 
@@ -31,7 +31,7 @@ test.describe('Ranking e Dashboard com dados do backend', () => {
     await expect(linhas(page).locator('.vitorias')).toHaveText(RANKING_ESPERADO.map(j => String(j.totalVictories)));
   });
 
-  test('ranking vazio mostra mensagem de incentivo', async ({ page }) => {
+  test('given no players when opening the ranking then shows an encouraging message', async ({ page }) => {
     await page.goto('/');
 
     await page.getByRole('button', { name: '🏆 Ranking' }).click();
@@ -39,7 +39,7 @@ test.describe('Ranking e Dashboard com dados do backend', () => {
     await expect(page.getByText(/Nenhum jogador no ranking ainda/)).toBeVisible();
   });
 
-  test('dashboard mostra as estatísticas do jogador escolhido', async ({ page }) => {
+  test('given played games when choosing a player on the dashboard then shows that player statistics', async ({ page }) => {
     await semear(CENARIO_RANKING);
     await page.goto('/');
 
@@ -62,7 +62,7 @@ test.describe('Ranking e Dashboard com dados do backend', () => {
     await expect(cartao(page, 'Vitórias')).toHaveText('0');
   });
 
-  test('dados novos no backend aparecem ao voltar para a tela', async ({ page }) => {
+  test('given new data in the backend when returning to the screen then shows the new data', async ({ page }) => {
     await semear({ jogadores: ['Ana'] });
     await page.goto('/');
     await page.getByRole('button', { name: '🏆 Ranking' }).click();

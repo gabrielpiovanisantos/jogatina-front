@@ -10,7 +10,7 @@ vi.mock('../services/api.js', () => ({
   }
 }));
 
-describe('Componente Dashboard', () => {
+describe('Dashboard component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -19,14 +19,14 @@ describe('Componente Dashboard', () => {
     vi.restoreAllMocks();
   });
 
-  it('deve renderizar o componente', async () => {
+  it('given an empty ranking when rendering then shows the title', async () => {
     apiService.default.obterRanking.mockResolvedValueOnce([]);
     render(<Dashboard />);
 
     expect(await screen.findByText(/📊 Dashboard/i)).toBeInTheDocument();
   });
 
-  it('deve mostrar mensagem de carregamento inicial', () => {
+  it('given a pending request when rendering then shows the loading message', () => {
     apiService.default.obterRanking.mockImplementationOnce(
       () => new Promise(() => {}) // Nunca resolve
     );
@@ -35,7 +35,7 @@ describe('Componente Dashboard', () => {
     expect(screen.getByText(/⏳ Carregando dashboard/i)).toBeInTheDocument();
   });
 
-  it('deve exibir as estatísticas do primeiro jogador por padrão', async () => {
+  it('given a ranking when rendering then shows the first player statistics by default', async () => {
     const mockJogadores = [
       { playerId: 1, playerName: 'João', totalGames: 10, differentFactions: 4, totalVictories: 6, winPercentage: 60, totalScore: 120 },
       { playerId: 2, playerName: 'Maria', totalGames: 8, differentFactions: 3, totalVictories: 5, winPercentage: 62.5, totalScore: 100 }
@@ -56,7 +56,7 @@ describe('Componente Dashboard', () => {
     expect(screen.getByText('Vitórias')).toBeInTheDocument();
   });
 
-  it('deve permitir trocar o jogador selecionado', async () => {
+  it('given a ranking when choosing another player then shows that player statistics', async () => {
     const mockJogadores = [
       { playerId: 1, playerName: 'João', totalGames: 10, differentFactions: 4, totalVictories: 6, winPercentage: 60, totalScore: 120 },
       { playerId: 2, playerName: 'Maria', totalGames: 8, differentFactions: 3, totalVictories: 5, winPercentage: 62.5, totalScore: 100 }
@@ -80,7 +80,7 @@ describe('Componente Dashboard', () => {
     });
   });
 
-  it('deve exibir mensagem quando não há jogadores', async () => {
+  it('given no players when rendering then shows the empty message', async () => {
     apiService.default.obterRanking.mockResolvedValueOnce([]);
 
     render(<Dashboard />);
@@ -90,7 +90,7 @@ describe('Componente Dashboard', () => {
     });
   });
 
-  it('deve exibir mensagem de erro quando falha a requisição', async () => {
+  it('given a failed request when rendering then shows the error message', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     apiService.default.obterRanking.mockRejectedValueOnce(
       new Error('Erro ao carregar jogadores')

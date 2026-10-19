@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import apiService from '../services/api.js';
 
-describe('API Service - Testes de Integração', () => {
+describe('API Service', () => {
 
   beforeEach(() => {
     // Resetar todos os mocks antes de cada teste
@@ -15,7 +15,7 @@ describe('API Service - Testes de Integração', () => {
   });
 
   describe('organizarMesas', () => {
-    it('deve fazer requisição POST para /api/setup/organize', async () => {
+    it('given players when organizing then sends a POST to /api/setup/organize', async () => {
       const jogadores = [
         { id: 1, name: 'João' },
         { id: 2, name: 'Maria' },
@@ -57,7 +57,7 @@ describe('API Service - Testes de Integração', () => {
       expect(resultado.groups).toHaveLength(2);
     });
 
-    it('deve lançar erro se a resposta não for ok', async () => {
+    it('given a non ok response when organizing then throws', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       const jogadores = [{ id: 1, name: 'João' }];
 
@@ -70,7 +70,7 @@ describe('API Service - Testes de Integração', () => {
       await expect(apiService.organizarMesas(jogadores)).rejects.toThrow();
     });
 
-    it('deve enviar dados corretos no body da requisição', async () => {
+    it('given players when organizing then sends them in the request body', async () => {
       const jogadores = [
         { id: 1, name: 'João' },
         { id: 2, name: 'Maria' }
@@ -92,7 +92,7 @@ describe('API Service - Testes de Integração', () => {
   });
 
   describe('obterRanking', () => {
-    it('deve fazer requisição GET para /dashboard/ranking', async () => {
+    it('given the ranking when getting it then sends a GET to /dashboard/ranking', async () => {
       const mockRanking = [
         { id: 1, name: 'João', points: 1500, games: 10, wins: 7 },
         { id: 2, name: 'Maria', points: 1200, games: 8, wins: 5 }
@@ -116,7 +116,7 @@ describe('API Service - Testes de Integração', () => {
       expect(resultado).toHaveLength(2);
     });
 
-    it('deve retornar array de jogadores com propriedades corretas', async () => {
+    it('given a ranking response when getting the ranking then returns the players with their fields', async () => {
       const mockRanking = [
         { id: 1, name: 'João', points: 1500, games: 10, wins: 7 }
       ];
@@ -135,7 +135,7 @@ describe('API Service - Testes de Integração', () => {
       expect(resultado[0]).toHaveProperty('wins');
     });
 
-    it('deve lançar erro se falhar a requisição', async () => {
+    it('given a failed request when getting the ranking then throws', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       globalThis.fetch.mockRejectedValueOnce(new Error('Conexão recusada'));
 
@@ -144,7 +144,7 @@ describe('API Service - Testes de Integração', () => {
   });
 
   describe('obterRankingJogador', () => {
-    it('deve fazer requisição GET para /dashboard/ranking/{id}', async () => {
+    it('given a player id when getting a player ranking then sends a GET to /dashboard/ranking/{id}', async () => {
       const playerId = 1;
       const mockPlayerRanking = { id: 1, name: 'João', points: 1500, games: 10, wins: 7 };
 
@@ -162,7 +162,7 @@ describe('API Service - Testes de Integração', () => {
       expect(resultado.id).toBe(playerId);
     });
 
-    it('deve aceitar diferentes tipos de ID', async () => {
+    it('given a numeric or string id when getting a player ranking then builds the same url', async () => {
       const mockPlayerRanking = { id: 1, name: 'João', points: 1500 };
 
       globalThis.fetch.mockResolvedValue({
@@ -182,8 +182,8 @@ describe('API Service - Testes de Integração', () => {
     });
   });
 
-  describe('Tratamento de Erros', () => {
-    it('deve logar erro no console', async () => {
+  describe('Error handling', () => {
+    it('given a network error when getting the ranking then logs it to the console', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       globalThis.fetch.mockRejectedValueOnce(new Error('Erro de rede'));
@@ -194,7 +194,7 @@ describe('API Service - Testes de Integração', () => {
       consoleSpy.mockRestore();
     });
 
-    it('deve lidar com respostas vazias', async () => {
+    it('given an empty response when getting the ranking then returns an empty array', async () => {
       globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => []
@@ -207,8 +207,8 @@ describe('API Service - Testes de Integração', () => {
     });
   });
 
-  describe('Headers de Requisição', () => {
-    it('deve incluir Content-Type application/json em POST', async () => {
+  describe('Request headers', () => {
+    it('given a POST request when organizing then sends Content-Type application/json', async () => {
       globalThis.fetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ groups: [] })
