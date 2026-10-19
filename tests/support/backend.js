@@ -68,12 +68,12 @@ export function semear({ jogadores, partidas = [] }) {
     }
     for (const partida of partidas) {
       const { rows } = await client.query(
-        'INSERT INTO game_results (date) VALUES ($1) RETURNING id',
+        'INSERT INTO games (date) VALUES ($1) RETURNING id',
         [partida.data]
       );
       for (const r of partida.resultados) {
         await client.query(
-          'INSERT INTO games (game_id, player_id, score, faction, won) VALUES ($1, $2, $3, $4, $5)',
+          'INSERT INTO game_results (game_id, player_id, score, faction, won) VALUES ($1, $2, $3, $4, $5)',
           [rows[0].id, ids[r.jogador], r.pontos, r.faccao, r.venceu]
         );
       }
