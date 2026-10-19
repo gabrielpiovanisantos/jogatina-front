@@ -48,17 +48,17 @@ export default function Ranking() {
                             </thead>
                             <tbody>
                                 {ranking && ranking.length > 0 && ranking.map((jogador, index) => (
-                                    <tr key={jogador.id || index} className="linha-jogador">
+                                    <tr key={jogador.playerId} className="linha-jogador">
                                         <td className="posicao">
                                             {index === 0 && '🥇'}
                                             {index === 1 && '🥈'}
                                             {index === 2 && '🥉'}
                                             {index > 2 && `#${index + 1}`}
                                         </td>
-                                        <td className="nome">{jogador.name || jogador.playerName || 'N/A'}</td>
-                                        <td className="pontos">{jogador.points || jogador.score || 0}</td>
-                                        <td className="partidas">{jogador.games || jogador.totalGames || 0}</td>
-                                        <td className="vitorias">{jogador.wins || jogador.victories || 0}</td>
+                                        <td className="nome">{jogador.playerName}</td>
+                                        <td className="pontos">{jogador.totalScore}</td>
+                                        <td className="partidas">{jogador.totalGames}</td>
+                                        <td className="vitorias">{jogador.totalVictories}</td>
                                     </tr>
                                 ))}
                             </tbody>

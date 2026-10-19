@@ -15,16 +15,17 @@ export const MOCK_PLAYERS = [
 
 export const MOCK_PLAYER_NAMES = MOCK_PLAYERS.map(p => p.name);
 
-// Já ordenado por pontos (maior para menor), como o backend faria.
+// Mesmo formato do PlayerRankingDTO do backend, já ordenado por vitórias e
+// depois pontos, como o backend faria.
 export const MOCK_RANKING = [
-  { playerId: 1, playerName: 'João', points: 48, totalGames: 14, totalVictories: 8, victories: 8, differentFactions: 5 },
-  { playerId: 6, playerName: 'Fernanda', points: 41, totalGames: 12, totalVictories: 6, victories: 6, differentFactions: 4 },
-  { playerId: 3, playerName: 'Carlos', points: 37, totalGames: 15, totalVictories: 5, victories: 5, differentFactions: 6 },
-  { playerId: 2, playerName: 'Maria', points: 33, totalGames: 10, totalVictories: 5, victories: 5, differentFactions: 3 },
-  { playerId: 5, playerName: 'Pedro', points: 29, totalGames: 11, totalVictories: 4, victories: 4, differentFactions: 4 },
-  { playerId: 8, playerName: 'Isabela', points: 22, totalGames: 8, totalVictories: 3, victories: 3, differentFactions: 3 },
-  { playerId: 4, playerName: 'Ana', points: 18, totalGames: 9, totalVictories: 2, victories: 2, differentFactions: 4 },
-  { playerId: 7, playerName: 'Bruno', points: 15, totalGames: 7, totalVictories: 1, victories: 1, differentFactions: 2 }
+  { playerId: 1, playerName: 'João', totalScore: 48, totalGames: 14, totalVictories: 8, differentFactions: 5 },
+  { playerId: 6, playerName: 'Fernanda', totalScore: 41, totalGames: 12, totalVictories: 6, differentFactions: 4 },
+  { playerId: 3, playerName: 'Carlos', totalScore: 37, totalGames: 15, totalVictories: 5, differentFactions: 6 },
+  { playerId: 2, playerName: 'Maria', totalScore: 33, totalGames: 10, totalVictories: 5, differentFactions: 3 },
+  { playerId: 5, playerName: 'Pedro', totalScore: 29, totalGames: 11, totalVictories: 4, differentFactions: 4 },
+  { playerId: 8, playerName: 'Isabela', totalScore: 22, totalGames: 8, totalVictories: 3, differentFactions: 3 },
+  { playerId: 4, playerName: 'Ana', totalScore: 18, totalGames: 9, totalVictories: 2, differentFactions: 4 },
+  { playerId: 7, playerName: 'Bruno', totalScore: 15, totalGames: 7, totalVictories: 1, differentFactions: 2 }
 ];
 
 /**

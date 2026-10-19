@@ -38,9 +38,9 @@ describe('Componente Ranking', () => {
 
   it('deve renderizar tabela com ranking de jogadores', async () => {
     const mockRanking = [
-      { id: 1, name: 'João', points: 1500, games: 10, wins: 7 },
-      { id: 2, name: 'Maria', points: 1200, games: 8, wins: 5 },
-      { id: 3, name: 'Pedro', points: 1000, games: 6, wins: 4 }
+      { playerId: 1, playerName: 'João', totalScore: 1500, totalGames: 10, totalVictories: 7 },
+      { playerId: 2, playerName: 'Maria', totalScore: 1200, totalGames: 8, totalVictories: 5 },
+      { playerId: 3, playerName: 'Pedro', totalScore: 1000, totalGames: 6, totalVictories: 4 }
     ];
 
     apiService.default.obterRanking.mockResolvedValueOnce(mockRanking);
@@ -61,9 +61,9 @@ describe('Componente Ranking', () => {
 
   it('deve exibir posições com medalhas corretas', async () => {
     const mockRanking = [
-      { id: 1, name: 'João', points: 1500, games: 10, wins: 7 },
-      { id: 2, name: 'Maria', points: 1200, games: 8, wins: 5 },
-      { id: 3, name: 'Pedro', points: 1000, games: 6, wins: 4 }
+      { playerId: 1, playerName: 'João', totalScore: 1500, totalGames: 10, totalVictories: 7 },
+      { playerId: 2, playerName: 'Maria', totalScore: 1200, totalGames: 8, totalVictories: 5 },
+      { playerId: 3, playerName: 'Pedro', totalScore: 1000, totalGames: 6, totalVictories: 4 }
     ];
 
     apiService.default.obterRanking.mockResolvedValueOnce(mockRanking);
@@ -110,7 +110,7 @@ describe('Componente Ranking', () => {
 
   it('deve exibir corretamente dados de pontos, partidas e vitórias', async () => {
     const mockRanking = [
-      { id: 1, name: 'João', points: 1500, games: 10, wins: 7 }
+      { playerId: 1, playerName: 'João', totalScore: 1500, totalGames: 10, totalVictories: 7 }
     ];
 
     apiService.default.obterRanking.mockResolvedValueOnce(mockRanking);
@@ -118,9 +118,9 @@ describe('Componente Ranking', () => {
     render(<Ranking />);
 
     await waitFor(() => {
-      expect(screen.getByText('1500')).toBeInTheDocument(); // points
-      expect(screen.getByText('10')).toBeInTheDocument();    // games
-      expect(screen.getByText('7')).toBeInTheDocument();     // wins
+      expect(screen.getByText('1500')).toBeInTheDocument(); // totalScore
+      expect(screen.getByText('10')).toBeInTheDocument();    // totalGames
+      expect(screen.getByText('7')).toBeInTheDocument();     // totalVictories
     });
   });
 
