@@ -125,6 +125,27 @@ describe('RegistrarPartida component', () => {
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(`Partida · ${formatarDataBR(paraAAAAMMDD(new Date()))}`);
   });
 
+  it.each([
+    'Facção não pode ser vazia',
+    'Pontuação não pode ser negativa',
+    'Jogador repetido na mesma partida',
+    'A partida precisa ter pelo menos um resultado'
+  ])('given the backend rejects with "%s" when saving then alerts that message', async (mensagem) => {
+    const user = userEvent.setup();
+    apiService.listarJogadores.mockResolvedValue(JOGADORES);
+    apiService.registrarPartida.mockRejectedValue(new Error(mensagem));
+
+    render(<RegistrarPartida />);
+
+    await user.selectOptions(await screen.findByLabelText('Jogador 1'), 'Ana');
+    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Vagabond');
+    await user.click(screen.getByRole('button', { name: /Salvar Partida/i }));
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith(`⚠️ Falha ao registrar partida: ${mensagem}`));
+    // O formulário não é limpo: o usuário corrige e tenta de novo
+    expect(screen.getByLabelText('Jogador 1')).toHaveDisplayValue('Ana');
+  });
+
   it('given a player chosen in one row when adding another row then disables that player there', async () => {
     const user = userEvent.setup();
     apiService.listarJogadores.mockResolvedValue(JOGADORES);

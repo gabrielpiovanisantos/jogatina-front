@@ -96,6 +96,25 @@ describe('SetupMesa component', () => {
     alertSpy.mockRestore();
   });
 
+  it('given a player already in the list when adding the same name in another case then prevents the duplicate', async () => {
+    const user = userEvent.setup();
+    render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
+
+    const input = screen.getByPlaceholderText(/Nome do jogador/i);
+    const botaoAdicionar = screen.getByRole('button', { name: '+' });
+
+    await user.type(input, 'Ana');
+    await user.click(botaoAdicionar);
+
+    await user.type(input, 'ana');
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    await user.click(botaoAdicionar);
+
+    expect(alertSpy).toHaveBeenCalledWith('Esse jogador já está na lista!');
+    expect(screen.getByText(/Total de confirmados: 1/i)).toBeInTheDocument();
+    alertSpy.mockRestore();
+  });
+
   it('given a player in the list when clicking remove then removes the player', async () => {
     const user = userEvent.setup();
     render(<SetupMesa dadosMesa={mockDadosMesa} onVoltar={mockOnVoltar} />);
