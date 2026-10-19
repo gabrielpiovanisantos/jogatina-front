@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css'
 import CriarMesa from "./pages/CriarMesa.jsx";
 import SetupMesa from "./pages/SetupMesa.jsx";
@@ -6,9 +6,23 @@ import Ranking from "./pages/Ranking.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import RegistrarPartida from "./pages/RegistrarPartida.jsx";
 
+// Telas que podem ser abertas direto pela URL (#partida, #ranking...), o que
+// mantém a tela atual ao dar F5. 'setup' fica de fora porque depende dos
+// dados da mesa, que se perdem no reload.
+const TELAS_DA_URL = ['criar', 'partida', 'ranking', 'dashboard'];
+
+const telaDaUrl = () => {
+    const tela = window.location.hash.slice(1);
+    return TELAS_DA_URL.includes(tela) ? tela : 'criar';
+};
+
 function App() {
-    const [tela, setTela] = useState('criar'); // 'criar', 'setup', 'partida', 'ranking' ou 'dashboard'
+    const [tela, setTela] = useState(telaDaUrl); // 'criar', 'setup', 'partida', 'ranking' ou 'dashboard'
     const [dadosMesa, setDadosMesa] = useState(null);
+
+    useEffect(() => {
+        window.history.replaceState(null, '', `#${tela}`);
+    }, [tela]);
 
     const irParaSetup = (dados) => {
         setDadosMesa(dados);
