@@ -1,16 +1,6 @@
 import { useState } from 'react';
 import './CriarMesa.css';
-
-// Datas do <input type="date"> vêm como "AAAA-MM-DD" e representam um dia no
-// calendário local. new Date("AAAA-MM-DD") as interpreta como meia-noite UTC
-// (dia anterior em fusos negativos, como o do Brasil), então convertemos à mão.
-const paraAAAAMMDD = (d) => [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, '0'),
-    String(d.getDate()).padStart(2, '0')
-].join('-');
-
-const formatarDataBR = (aaaammdd) => aaaammdd.split('-').reverse().join('/');
+import { paraAAAAMMDD, formatarDataBR } from '../utils/datas.js';
 
 export default function CriarMesa({ onContinuar }) {
     const [data, setData] = useState('');

@@ -19,6 +19,16 @@
     font-size: 28px;
 }
 
+.campo-data {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    color: #c8e6c9;
+    font-weight: bold;
+}
+
 .resultado-jogador {
     background-color: #1b2e15;
     border-left: 4px solid #4a7c59;
@@ -45,7 +55,8 @@
 }
 
 .cartao-partida select,
-.cartao-partida input[type="number"] {
+.cartao-partida input[type="number"],
+.cartao-partida input[type="date"] {
     padding: 8px 10px;
     border: 1px solid #ccc;
     border-radius: 6px;

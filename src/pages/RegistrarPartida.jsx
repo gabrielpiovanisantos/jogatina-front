@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import apiService from '../services/api.js';
 import './RegistrarPartida.css';
+import { paraAAAAMMDD, formatarDataBR, intervaloDoDia, dataComHoraAtual } from '../utils/datas.js';
 
 const FACCOES_ROOT = [
     'Marquise de Cat',
@@ -36,6 +37,31 @@ export default function RegistrarPartida() {
         buscarJogadores();
     }, []);
 
+    // Dia da partida (AAAA-MM-DD) e o número dela entre as partidas desse dia
+    const [dataPartida, setDataPartida] = useState(() => paraAAAAMMDD(new Date()));
+    const [numeroPartida, setNumeroPartida] = useState(null);
+    const [partidasSalvas, setPartidasSalvas] = useState(0);
+
+    useEffect(() => {
+        if (!dataPartida) return;
+        let cancelado = false;
+
+        const buscarNumero = async () => {
+            try {
+                const { inicio, fim } = intervaloDoDia(dataPartida);
+                const partidasDoDia = await apiService.listarPartidas(inicio, fim);
+                if (!cancelado) setNumeroPartida(partidasDoDia.length + 1);
+            } catch (error) {
+                if (!cancelado) setNumeroPartida(null);
+                console.error(error);
+            }
+        };
+
+        buscarNumero();
+        // Evita que a resposta de uma data antiga sobrescreva a da data atual
+        return () => { cancelado = true; };
+    }, [dataPartida, partidasSalvas]);
+
     // Estado que guarda a lista de resultados preenchidos na tela
     const [resultados, setResultados] = useState([
         { playerId: '', faction: '', points: 0, won: false }
@@ -65,7 +91,7 @@ export default function RegistrarPartida() {
 
         // Formata os dados para garantir que os tipos estejam corretos para o Kotlin
         const payload = {
-            dateTime: new Date().toISOString(),
+            dateTime: dataComHoraAtual(dataPartida).toISOString(),
             results: resultados.map(r => ({
                 playerId: parseInt(r.playerId),
                 faction: String(r.faction),
@@ -77,8 +103,9 @@ export default function RegistrarPartida() {
         try {
             await apiService.registrarPartida(payload);
             alert('🏆 Partida registrada com sucesso!');
-            // Reseta o formulário após o sucesso
+            // Reseta o formulário após o sucesso e avança a numeração do dia
             setResultados([{ playerId: '', faction: '', points: 0, won: false }]);
+            setPartidasSalvas(n => n + 1);
         } catch (error) {
             alert(`⚠️ Falha ao registrar partida: ${error.message}`);
             console.error(error);
@@ -99,9 +126,24 @@ export default function RegistrarPartida() {
 
     return (
         <div className="cartao-partida">
-            <h2>Nova Partida</h2>
+            <h2>
+                {numeroPartida && dataPartida ? `Partida ${numeroPartida}` : 'Partida'}
+                {dataPartida && ` · ${formatarDataBR(dataPartida)}`}
+            </h2>
 
             <form onSubmit={salvarPartida}>
+                <div className="campo-data">
+                    <label htmlFor="data-partida">Data da partida:</label>
+                    <input
+                        id="data-partida"
+                        type="date"
+                        required
+                        max={paraAAAAMMDD(new Date())}
+                        value={dataPartida}
+                        onChange={(e) => setDataPartida(e.target.value)}
+                    />
+                </div>
+
                 {resultados.map((resultado, index) => (
                     <div key={index} className="resultado-jogador">
                         <h3>Jogador {index + 1}</h3>

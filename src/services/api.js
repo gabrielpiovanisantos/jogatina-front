@@ -13,6 +13,9 @@ const USE_MOCK_DATA = import.meta.env.MODE !== 'test' && import.meta.env.VITE_US
 
 const aguardar = (ms = 400) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Partidas "registradas" no modo mock, para a numeração do dia avançar.
+const partidasMock = [];
+
 export const apiService = {
   /**
    * Organiza os jogadores em mesas de acordo com o algoritmo do backend
@@ -144,6 +147,7 @@ export const apiService = {
     if (USE_MOCK_DATA) {
       console.info('[api] Usando dados estáticos (mock) em registrarPartida', payload);
       await aguardar();
+      partidasMock.push({ id: partidasMock.length + 1, dateTime: payload.dateTime });
       return { success: true, message: 'Partida registrada (mock)' };
     }
 
@@ -162,6 +166,36 @@ export const apiService = {
       return { success: true };
     } catch (error) {
       console.error('Erro ao registrar partida:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lista as partidas com data no intervalo [de, ate)
+   * @param {Date} de - Início do intervalo (inclusivo)
+   * @param {Date} ate - Fim do intervalo (exclusivo)
+   * @returns {Promise} Lista de { id, dateTime }, da mais antiga para a mais recente
+   */
+  listarPartidas: async (de, ate) => {
+    if (USE_MOCK_DATA) {
+      console.info('[api] Usando dados estáticos (mock) em listarPartidas');
+      await aguardar(150);
+      return partidasMock.filter(p => new Date(p.dateTime) >= de && new Date(p.dateTime) < ate);
+    }
+
+    try {
+      const params = new URLSearchParams({ from: de.toISOString(), to: ate.toISOString() });
+      const response = await fetch(`${API_BASE_URL}/api/games?${params}`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status} ao listar partidas`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Erro ao listar partidas:', error);
       throw error;
     }
   }

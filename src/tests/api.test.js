@@ -91,6 +91,33 @@ describe('API Service', () => {
     });
   });
 
+  describe('listarPartidas', () => {
+    it('given a range when listing games then sends a GET to /api/games with from and to as ISO instants', async () => {
+      const partidas = [{ id: 4, dateTime: '2026-10-19T18:00:00Z' }];
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => partidas });
+
+      const resultado = await apiService.listarPartidas(
+        new Date('2026-10-19T03:00:00Z'),
+        new Date('2026-10-20T03:00:00Z')
+      );
+
+      const url = new URL(globalThis.fetch.mock.calls[0][0], 'http://base');
+      expect(url.pathname).toBe('/api/games');
+      expect(url.searchParams.get('from')).toBe('2026-10-19T03:00:00.000Z');
+      expect(url.searchParams.get('to')).toBe('2026-10-20T03:00:00.000Z');
+      expect(resultado).toEqual(partidas);
+    });
+
+    it('given an error response when listing games then throws', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 500 });
+
+      await expect(
+        apiService.listarPartidas(new Date('2026-10-19T03:00:00Z'), new Date('2026-10-20T03:00:00Z'))
+      ).rejects.toThrow('Erro 500 ao listar partidas');
+    });
+  });
+
   describe('obterRanking', () => {
     it('given the ranking when getting it then sends a GET to /dashboard/ranking', async () => {
       const mockRanking = [
