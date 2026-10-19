@@ -210,6 +210,7 @@ describe('Componente SetupMesa', () => {
   });
 
   it('deve exibir erro quando chamada de API falha', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
     apiService.default.organizarMesas.mockRejectedValueOnce(
       new Error('Erro ao conectar')

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Dashboard from '../pages/Dashboard.jsx';
 import * as apiService from '../services/api.js';
 
@@ -19,11 +19,11 @@ describe('Componente Dashboard', () => {
     vi.restoreAllMocks();
   });
 
-  it('deve renderizar o componente', () => {
+  it('deve renderizar o componente', async () => {
     apiService.default.obterRanking.mockResolvedValueOnce([]);
     render(<Dashboard />);
 
-    expect(screen.getByText(/📊 Dashboard/i)).toBeInTheDocument();
+    expect(await screen.findByText(/📊 Dashboard/i)).toBeInTheDocument();
   });
 
   it('deve mostrar mensagem de carregamento inicial', () => {
@@ -71,8 +71,7 @@ describe('Componente Dashboard', () => {
     });
 
     const seletor = screen.getByLabelText(/Jogador/i);
-    seletor.value = '2';
-    seletor.dispatchEvent(new Event('change', { bubbles: true }));
+    fireEvent.change(seletor, { target: { value: '2' } });
 
     await waitFor(() => {
       expect(screen.getByText('8')).toBeInTheDocument();
@@ -92,6 +91,7 @@ describe('Componente Dashboard', () => {
   });
 
   it('deve exibir mensagem de erro quando falha a requisição', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     apiService.default.obterRanking.mockRejectedValueOnce(
       new Error('Erro ao carregar jogadores')
     );

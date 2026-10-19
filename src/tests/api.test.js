@@ -58,6 +58,7 @@ describe('API Service - Testes de Integração', () => {
     });
 
     it('deve lançar erro se a resposta não for ok', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
       const jogadores = [{ id: 1, name: 'João' }];
 
       globalThis.fetch.mockResolvedValueOnce({
@@ -135,6 +136,7 @@ describe('API Service - Testes de Integração', () => {
     });
 
     it('deve lançar erro se falhar a requisição', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
       globalThis.fetch.mockRejectedValueOnce(new Error('Conexão recusada'));
 
       await expect(apiService.obterRanking()).rejects.toThrow('Conexão recusada');

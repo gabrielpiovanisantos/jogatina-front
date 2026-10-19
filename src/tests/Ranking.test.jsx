@@ -19,11 +19,11 @@ describe('Componente Ranking', () => {
     vi.restoreAllMocks();
   });
 
-  it('deve renderizar o componente', () => {
+  it('deve renderizar o componente', async () => {
     apiService.default.obterRanking.mockResolvedValueOnce([]);
     render(<Ranking />);
 
-    expect(screen.getByText(/🏆 Ranking/i)).toBeInTheDocument();
+    expect(await screen.findByText(/🏆 Ranking/i)).toBeInTheDocument();
   });
 
   it('deve mostrar mensagem de carregamento inicial', () => {
@@ -86,6 +86,7 @@ describe('Componente Ranking', () => {
   });
 
   it('deve exibir mensagem de erro quando falha a requisição', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     apiService.default.obterRanking.mockRejectedValueOnce(
       new Error('Erro ao carregar ranking')
     );
