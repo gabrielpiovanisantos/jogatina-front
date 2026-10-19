@@ -6,6 +6,12 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+
+# O .env não entra no contexto de build (.dockerignore), então as variáveis do
+# Vite são definidas aqui: URL relativa para passar pelo proxy do nginx e mock
+# desligado para usar o backend real.
+ENV VITE_API_URL=/ \
+    VITE_USE_MOCK=false
 RUN npm run build
 
 # --- Runtime stage ---
@@ -24,4 +30,6 @@ ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://localhost/ || exit 1
+# 127.0.0.1 em vez de localhost: no Alpine, localhost resolve primeiro para ::1
+# e o nginx só escuta em IPv4.
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1/ || exit 1
