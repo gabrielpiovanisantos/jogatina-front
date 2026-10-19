@@ -2,6 +2,9 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  /* Item flex do #root: sem isso o conteúdo largo (tabela do ranking)
+     estica a página além da tela no celular em vez de rolar no cartão. */
+  min-width: 0;
 }
 
 .navbar {

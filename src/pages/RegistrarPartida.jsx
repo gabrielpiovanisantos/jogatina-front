@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiService from '../services/api.js';
+import './RegistrarPartida.css';
 
 const FACCOES_ROOT = [
     'Marquise de Cat',
@@ -85,27 +86,27 @@ export default function RegistrarPartida() {
     };
 
     if (carregando) {
-        return <div>⏳ Carregando jogadores...</div>;
+        return <div className="cartao-partida">⏳ Carregando jogadores...</div>;
     }
 
     if (erro) {
-        return <div className="erro-mensagem">⚠️ {erro}</div>;
+        return <div className="cartao-partida"><div className="erro-mensagem">⚠️ {erro}</div></div>;
     }
 
     if (jogadores.length === 0) {
-        return <div>Nenhum jogador cadastrado ainda. Organize uma mesa para cadastrar os jogadores.</div>;
+        return <div className="cartao-partida">Nenhum jogador cadastrado ainda. Organize uma mesa para cadastrar os jogadores.</div>;
     }
 
     return (
-        <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
+        <div className="cartao-partida">
             <h2>Nova Partida</h2>
 
             <form onSubmit={salvarPartida}>
                 {resultados.map((resultado, index) => (
-                    <div key={index} style={{ border: '1px solid #ccc', padding: '15px', marginBottom: '15px', borderRadius: '8px' }}>
+                    <div key={index} className="resultado-jogador">
                         <h3>Jogador {index + 1}</h3>
 
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <div className="linha-selects">
                             <select
                                 required
                                 aria-label={`Jogador ${index + 1}`}
@@ -137,7 +138,7 @@ export default function RegistrarPartida() {
                             </select>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div className="linha-pontuacao">
                             <label>
                                 Pontos:
                                 <input
@@ -147,11 +148,10 @@ export default function RegistrarPartida() {
                                     max="30"
                                     value={resultado.points}
                                     onChange={(e) => atualizarCampo(index, 'points', e.target.value)}
-                                    style={{ width: '60px', marginLeft: '5px' }}
                                 />
                             </label>
 
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <label className="campo-vencedor">
                                 <input
                                     type="checkbox"
                                     checked={resultado.won}
@@ -161,7 +161,7 @@ export default function RegistrarPartida() {
                             </label>
 
                             {resultados.length > 1 && (
-                                <button type="button" onClick={() => removerJogador(index)} style={{ color: 'red', marginLeft: 'auto' }}>
+                                <button type="button" className="btn-remover" onClick={() => removerJogador(index)}>
                                     Remover
                                 </button>
                             )}
@@ -169,12 +169,12 @@ export default function RegistrarPartida() {
                     </div>
                 ))}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-                    <button type="button" onClick={adicionarJogador}>
+                <div className="acoes-partida">
+                    <button type="button" className="btn-adicionar" onClick={adicionarJogador}>
                         + Adicionar Jogador
                     </button>
 
-                    <button type="submit" style={{ backgroundColor: '#4CAF50', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+                    <button type="submit" className="btn-salvar">
                         Salvar Partida
                     </button>
                 </div>

@@ -1,12 +1,21 @@
+/* Mesmo cartão verde do CriarMesa: sem ele o conteúdo fica direto sobre a
+   imagem de fundo e o texto some. */
 .dashboard-container {
+    width: 100%;
     max-width: 900px;
-    margin: 0 auto;
-    padding: 20px;
+    margin: 50px auto;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    background-color: #2b4522;
+    color: #ffffff;
+    box-sizing: border-box;
 }
 
 .dashboard-container h1 {
     text-align: center;
-    color: #333;
+    color: #e8f5e9;
+    margin-top: 0;
     font-size: 2.5rem;
     margin-bottom: 30px;
 }
@@ -30,7 +39,7 @@
 
 .seletor-jogador label {
     font-weight: 600;
-    color: #333;
+    color: #c8e6c9;
 }
 
 .seletor-jogador select {
@@ -52,10 +61,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: white;
+    background-color: #1b2e15;
+    border-left: 4px solid #4a7c59;
     border-radius: 8px;
     padding: 30px 15px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .card-icone {
@@ -66,12 +75,12 @@
 .card-valor {
     font-size: 2.2rem;
     font-weight: bold;
-    color: #2196F3;
+    color: #f0a35e;
 }
 
 .card-rotulo {
     margin-top: 8px;
-    color: #666;
+    color: #c8e6c9;
     font-size: 0.95rem;
     text-align: center;
 }
@@ -79,15 +88,16 @@
 .mensagem-vazia {
     text-align: center;
     padding: 40px;
-    color: #999;
+    color: #c8e6c9;
     font-size: 1.1rem;
-    background-color: #f5f5f5;
+    background-color: #1b2e15;
     border-radius: 8px;
 }
 
 @media (max-width: 600px) {
     .dashboard-container {
-        padding: 10px;
+        margin: 20px auto;
+        padding: 15px;
     }
 
     .dashboard-container h1 {

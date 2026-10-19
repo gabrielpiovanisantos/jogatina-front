@@ -1,0 +1,155 @@
+/* Mesmo cartão verde do CriarMesa: sem ele o formulário fica direto sobre a
+   imagem de fundo e o texto some. */
+.cartao-partida {
+    width: 100%;
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    background-color: #2b4522;
+    color: #ffffff;
+    box-sizing: border-box;
+}
+
+.cartao-partida h2 {
+    margin-top: 0;
+    text-align: center;
+    color: #e8f5e9;
+    font-size: 28px;
+}
+
+.resultado-jogador {
+    background-color: #1b2e15;
+    border-left: 4px solid #4a7c59;
+    border-radius: 6px;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+}
+
+.resultado-jogador h3 {
+    margin: 0 0 12px;
+    color: #c8e6c9;
+}
+
+.linha-selects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.linha-selects select {
+    flex: 1;
+    min-width: 0;
+}
+
+.cartao-partida select,
+.cartao-partida input[type="number"] {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    background-color: white;
+    color: #333;
+}
+
+.cartao-partida input[type="number"] {
+    width: 70px;
+    margin-left: 6px;
+}
+
+.cartao-partida select:focus,
+.cartao-partida input:focus {
+    outline: none;
+    border-color: #4a7c59;
+    box-shadow: 0 0 5px rgba(74, 124, 89, 0.5);
+}
+
+.linha-pontuacao {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 15px;
+    color: #c8e6c9;
+    font-weight: bold;
+}
+
+.campo-vencedor {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.campo-vencedor input {
+    width: 18px;
+    height: 18px;
+    accent-color: #d35400;
+}
+
+.acoes-partida {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-adicionar,
+.btn-salvar,
+.btn-remover {
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-adicionar,
+.btn-salvar {
+    flex: 1;
+    padding: 12px;
+    font-size: 15px;
+}
+
+.btn-adicionar {
+    background: #4a7c59;
+}
+
+.btn-adicionar:hover {
+    background: #386044;
+}
+
+.btn-salvar {
+    background: #d35400;
+    box-shadow: 0 4px 6px rgba(211, 84, 0, 0.3);
+}
+
+.btn-salvar:hover {
+    background: #a84300;
+}
+
+.btn-adicionar:active,
+.btn-salvar:active {
+    transform: scale(0.98);
+}
+
+.btn-remover {
+    margin-left: auto;
+    padding: 6px 12px;
+    background: #c62828;
+    font-size: 13px;
+}
+
+.btn-remover:hover {
+    background: #8e1c1c;
+}
+
+.btn-adicionar:focus-visible,
+.btn-salvar:focus-visible,
+.btn-remover:focus-visible {
+    outline: 2px solid #e8f5e9;
+    outline-offset: 2px;
+}
