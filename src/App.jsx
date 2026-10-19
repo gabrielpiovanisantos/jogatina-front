@@ -4,9 +4,10 @@ import CriarMesa from "./pages/CriarMesa.jsx";
 import SetupMesa from "./pages/SetupMesa.jsx";
 import Ranking from "./pages/Ranking.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import RegistrarPartida from "./pages/RegistrarPartida.jsx";
 
 function App() {
-    const [tela, setTela] = useState('criar'); // 'criar', 'setup', 'ranking' ou 'dashboard'
+    const [tela, setTela] = useState('criar'); // 'criar', 'setup', 'partida', 'ranking' ou 'dashboard'
     const [dadosMesa, setDadosMesa] = useState(null);
 
     const irParaSetup = (dados) => {
@@ -16,6 +17,10 @@ function App() {
 
     const voltarParaCriar = () => {
         setTela('criar');
+    };
+
+    const irParaPartida = () => {
+        setTela('partida');
     };
 
     const irParaRanking = () => {
@@ -32,6 +37,8 @@ function App() {
                 return <CriarMesa onContinuar={irParaSetup} />;
             case 'setup':
                 return <SetupMesa dadosMesa={dadosMesa} onVoltar={voltarParaCriar} />;
+            case 'partida':
+                return <RegistrarPartida />;
             case 'ranking':
                 return <Ranking />;
             default:
@@ -47,6 +54,12 @@ function App() {
                     onClick={() => setTela('criar')}
                 >
                     🎲 Criar Mesa
+                </button>
+                <button
+                    className={`nav-button ${tela === 'partida' ? 'active' : ''}`}
+                    onClick={irParaPartida}
+                >
+                    📝 Registrar Partida
                 </button>
                 <button
                     className={`nav-button ${tela === 'ranking' ? 'active' : ''}`}

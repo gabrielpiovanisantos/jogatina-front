@@ -6,7 +6,7 @@ import { CENARIO_RANKING, RANKING_ESPERADO } from '../support/cenario.js';
 
 const jogadores = n => Array.from({ length: n }, (_, i) => ({ id: i + 1, name: `Jogador ${i + 1}` }));
 
-describe('apiService ↔ backend real', () => {
+describe('apiService ↔ real backend', () => {
   beforeEach(() => limparBanco());
 
   describe('organizarMesas → POST /api/setup/organize', () => {
@@ -20,51 +20,78 @@ describe('apiService ↔ backend real', () => {
       [10, [5, 5]],
       [13, [5, 4, 4]],
       [20, [4, 4, 4, 4, 4]]
-    ])('distribui %i jogadores em mesas de %j', async (n, tamanhos) => {
+    ])('given %i players when organizing then splits them into tables of %j', async (n, tamanhos) => {
       const enviados = jogadores(n);
 
       const { groups } = await apiService.organizarMesas(enviados);
 
       expect(groups.map(g => g.length)).toEqual(tamanhos);
       expect(groups.flat()).toHaveLength(n);
-      expect(new Set(groups.flat().map(j => j.id))).toEqual(new Set(enviados.map(j => j.id)));
+      expect(new Set(groups.flat().map(j => j.name))).toEqual(new Set(enviados.map(j => j.name)));
     });
 
-    it('aceita os ids gerados pelo SetupMesa (Date.now())', async () => {
+    it('given new names with SetupMesa ids (Date.now()) when organizing then registers them and returns the database ids', async () => {
       const base = Date.now();
       const enviados = ['Ana', 'Bruno', 'Carla'].map((name, i) => ({ id: base + i, name }));
 
       const { groups } = await apiService.organizarMesas(enviados);
 
-      expect(groups).toEqual([enviados]);
+      expect(groups).toEqual([[{ id: 1, name: 'Ana' }, { id: 2, name: 'Bruno' }, { id: 3, name: 'Carla' }]]);
     });
 
-    it('propaga a mensagem de validação do backend com menos de 3 jogadores', async () => {
+    it('given a registered player when organizing with the name in another case then reuses the player', async () => {
+      const ids = await semear({ jogadores: ['Ana'] });
+
+      const { groups } = await apiService.organizarMesas([
+        { id: 1, name: ' ana ' }, { id: 2, name: 'Bruno' }, { id: 3, name: 'Carla' }
+      ]);
+
+      expect(groups[0][0]).toEqual({ id: ids.Ana, name: 'Ana' });
+    });
+
+    it('given fewer than 3 players when organizing then rejects with the backend validation message', async () => {
       await expect(apiService.organizarMesas(jogadores(2)))
         .rejects.toThrow('É necessário pelo menos 3 jogadores para organizar mesas');
     });
 
-    it('propaga erro para nome em branco', async () => {
+    it('given a blank name when organizing then rejects with the backend error', async () => {
       const enviados = [...jogadores(2), { id: 3, name: '   ' }];
 
       await expect(apiService.organizarMesas(enviados))
         .rejects.toThrow('Nome de jogador não pode ser vazio');
     });
 
-    it('propaga erro para ids duplicados', async () => {
-      const enviados = [...jogadores(3), { id: 1, name: 'Clone' }];
+    it('given a repeated name when organizing then rejects with the backend error', async () => {
+      const enviados = [...jogadores(3), { id: 4, name: 'JOGADOR 1' }];
 
       await expect(apiService.organizarMesas(enviados))
-        .rejects.toThrow('IDs de jogadores duplicados');
+        .rejects.toThrow('Jogador repetido na lista');
+    });
+  });
+
+  describe('listarJogadores → GET /api/players', () => {
+    it('given players registered by organizarMesas when listing players then returns them in alphabetical order', async () => {
+      await apiService.organizarMesas([
+        { id: 1, name: 'Carla' }, { id: 2, name: 'Ana' }, { id: 3, name: 'Bruno' }
+      ]);
+
+      const lista = await apiService.listarJogadores();
+
+      expect(lista.map(j => j.name)).toEqual(['Ana', 'Bruno', 'Carla']);
+      expect(lista.every(j => Number.isInteger(j.id))).toBe(true);
+    });
+
+    it('given no players when listing players then returns an empty list', async () => {
+      expect(await apiService.listarJogadores()).toEqual([]);
     });
   });
 
   describe('obterRanking → GET /dashboard/ranking', () => {
-    it('retorna lista vazia sem jogadores cadastrados', async () => {
+    it('given no players when getting the ranking then returns an empty list', async () => {
       expect(await apiService.obterRanking()).toEqual([]);
     });
 
-    it('retorna o ranking calculado e ordenado pelo backend', async () => {
+    it('given played games when getting the ranking then returns it calculated and sorted by the backend', async () => {
       await semear(CENARIO_RANKING);
 
       const ranking = await apiService.obterRanking();
@@ -72,7 +99,7 @@ describe('apiService ↔ backend real', () => {
       expect(ranking).toMatchObject(RANKING_ESPERADO);
     });
 
-    it('expõe os campos que Ranking e Dashboard leem', async () => {
+    it('given played games when getting the ranking then exposes the fields Ranking and Dashboard read', async () => {
       await semear(CENARIO_RANKING);
 
       const [primeiro] = await apiService.obterRanking();
@@ -90,7 +117,7 @@ describe('apiService ↔ backend real', () => {
   });
 
   describe('obterRankingJogador → GET /dashboard/ranking/{id}', () => {
-    it('retorna as estatísticas de um jogador', async () => {
+    it('given played games when getting a player ranking then returns that player statistics', async () => {
       const ids = await semear(CENARIO_RANKING);
 
       const bruno = await apiService.obterRankingJogador(ids.Bruno);
@@ -98,7 +125,7 @@ describe('apiService ↔ backend real', () => {
       expect(bruno).toMatchObject({ playerId: ids.Bruno, ...RANKING_ESPERADO[1] });
     });
 
-    it('rejeita quando o jogador não existe', async () => {
+    it('given an unknown player when getting a player ranking then rejects', async () => {
       // O backend responde 200 com corpo vazio (o controller retorna null),
       // então hoje o erro que chega ao frontend é de parse do JSON, não um 404.
       await expect(apiService.obterRankingJogador(999)).rejects.toThrow();
@@ -106,7 +133,7 @@ describe('apiService ↔ backend real', () => {
   });
 
   describe('registrarPartida → POST /api/games/finish', () => {
-    it('registra a partida e ela passa a contar no ranking', async () => {
+    it('given registered players when finishing a game then it counts in the ranking', async () => {
       const ids = await semear({ jogadores: ['Ana', 'Bruno', 'Carla'] });
 
       await apiService.registrarPartida({

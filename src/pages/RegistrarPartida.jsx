@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import apiService from '../services/api.js';
-import { MOCK_PLAYERS } from '../services/mockData.js';
 
 const FACCOES_ROOT = [
     'Marquise de Cat',
@@ -14,6 +13,28 @@ const FACCOES_ROOT = [
 ];
 
 export default function RegistrarPartida() {
+    // Jogadores cadastrados no backend (cadastrados ao organizar mesas)
+    const [jogadores, setJogadores] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [erro, setErro] = useState(null);
+
+    useEffect(() => {
+        const buscarJogadores = async () => {
+            try {
+                setCarregando(true);
+                setErro(null);
+                setJogadores(await apiService.listarJogadores());
+            } catch (error) {
+                setErro(`Erro ao carregar jogadores: ${error.message}`);
+                console.error(error);
+            } finally {
+                setCarregando(false);
+            }
+        };
+
+        buscarJogadores();
+    }, []);
+
     // Estado que guarda a lista de resultados preenchidos na tela
     const [resultados, setResultados] = useState([
         { playerId: '', faction: '', points: 0, won: false }
@@ -63,6 +84,18 @@ export default function RegistrarPartida() {
         }
     };
 
+    if (carregando) {
+        return <div>⏳ Carregando jogadores...</div>;
+    }
+
+    if (erro) {
+        return <div className="erro-mensagem">⚠️ {erro}</div>;
+    }
+
+    if (jogadores.length === 0) {
+        return <div>Nenhum jogador cadastrado ainda. Organize uma mesa para cadastrar os jogadores.</div>;
+    }
+
     return (
         <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
             <h2>Nova Partida</h2>
@@ -75,12 +108,20 @@ export default function RegistrarPartida() {
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                             <select
                                 required
+                                aria-label={`Jogador ${index + 1}`}
                                 value={resultado.playerId}
                                 onChange={(e) => atualizarCampo(index, 'playerId', e.target.value)}
                             >
                                 <option value="">Selecione o Jogador</option>
-                                {MOCK_PLAYERS.map(j => (
-                                    <option key={j.id} value={j.id}>{j.name}</option>
+                                {/* Quem já foi escolhido em outra linha fica desabilitado: o backend recusa jogador repetido */}
+                                {jogadores.map(j => (
+                                    <option
+                                        key={j.id}
+                                        value={j.id}
+                                        disabled={resultados.some((r, i) => i !== index && String(r.playerId) === String(j.id))}
+                                    >
+                                        {j.name}
+                                    </option>
                                 ))}
                             </select>
 

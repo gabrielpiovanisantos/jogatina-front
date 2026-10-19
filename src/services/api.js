@@ -1,5 +1,5 @@
 // Serviço centralizado para chamadas à API
-import { MOCK_RANKING, gerarMesasMock } from './mockData.js';
+import { MOCK_PLAYERS, MOCK_RANKING, gerarMesasMock } from './mockData.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?
   (import.meta.env.VITE_API_URL === '/' ? '' : import.meta.env.VITE_API_URL) :
@@ -42,6 +42,34 @@ export const apiService = {
       return data;
     } catch (error) {
       console.error('Erro ao organizar mesas:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lista os jogadores cadastrados (cadastrados ao organizar mesas)
+   * @returns {Promise} Lista de { id, name } em ordem alfabética
+   */
+  listarJogadores: async () => {
+    if (USE_MOCK_DATA) {
+      console.info('[api] Usando dados estáticos (mock) em listarJogadores');
+      await aguardar();
+      return MOCK_PLAYERS.map(jogador => ({ ...jogador }));
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/players`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status} ao listar jogadores`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Erro ao listar jogadores:', error);
       throw error;
     }
   },
