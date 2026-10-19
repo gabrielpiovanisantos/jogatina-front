@@ -16,6 +16,7 @@ cd C:\_developer\jogatina
 ### **Terminal 2: Frontend (React)**
 ```powershell
 cd C:\_developer\frontend-jogatina
+Copy-Item .env.example .env   # só na primeira vez
 npm run dev
 ```
 ✅ Abra: http://localhost:5173

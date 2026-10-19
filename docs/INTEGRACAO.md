@@ -84,12 +84,17 @@ O frontend estará disponível em: `http://localhost:5173`
 
 ## 🔧 Variáveis de Ambiente
 
-Arquivo `.env`:
+O `.env` é local e não vai para o git. O modelo versionado é o `.env.example`;
+na primeira vez, copie-o (`cp .env.example .env`) e ajuste:
+
 ```env
-VITE_API_URL=http://localhost:8080
+VITE_API_URL=/          # relativo: passa pelo proxy do Vite (dev) e do nginx (Docker)
+VITE_USE_MOCK=false     # sem esta linha, a interface usa dados mockados
 ```
 
-Para mudar a porta do backend, edite esta variável e reinicie o desenvolvimento.
+Para mudar o endereço do backend no desenvolvimento, use a variável `BACKEND_URL`
+do `vite.config.js` (alvo do proxy) e reinicie o desenvolvimento. A imagem Docker
+não lê o `.env`: as variáveis do Vite são definidas no `Dockerfile`.
 
 ---
 

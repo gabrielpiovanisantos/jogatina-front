@@ -28,3 +28,11 @@ dist-ssr
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Variáveis de ambiente locais (o modelo versionado é o .env.example)
+.env
+.env.local
+.env.*.local
+
+# Claude Code (configurações locais da máquina)
+.claude/settings.local.json
