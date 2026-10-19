@@ -10,7 +10,7 @@
 - ✅ Testes unitários do serviço de API (`api.test.js`)
 - ✅ Testes do componente Ranking (`Ranking.test.jsx`)
 - ✅ Testes do componente SetupMesa (`SetupMesa.test.jsx`)
-- ✅ Testes de integração E2E (`integration.e2e.test.js`)
+- ✅ Testes de integração e E2E contra o backend real (`tests/`)
 - ✅ Setup e configuração do Vitest
 
 ### **Dependências Adicionadas:**
@@ -67,8 +67,7 @@ src/
 │   ├── setup.js                    ← Configuração global
 │   ├── api.test.js                 ← Testes do serviço de API
 │   ├── Ranking.test.jsx            ← Testes do componente Ranking
-│   ├── SetupMesa.test.jsx          ← Testes do componente SetupMesa
-│   └── integration.e2e.test.js     ← Testes de integração E2E
+│   └── SetupMesa.test.jsx          ← Testes do componente SetupMesa
 │
 ├── services/
 │   └── api.js                      ← Código sendo testado
@@ -212,23 +211,56 @@ it('deve adicionar jogador quando input é preenchido', async () => {
 
 ---
 
-## 🔗 Testes de Integração E2E (`integration.e2e.test.js`)
+## 🔗 Testes de Integração e E2E com o backend real (`tests/`)
 
-### **O que documenta:**
+Ficam fora de `src/tests` porque precisam do backend (`../jogatina`) rodando.
+`npm run test` continua rodando só os testes unitários (com `fetch` mockado).
 
-- 📋 Fluxo: Criar Mesa → Organizar Jogadores
-- 📋 Fluxo: Visualizar Ranking
-- 📋 Sequência completa de uso
-- 📋 Tratamento de erros
-- 📋 Performance e otimizações
-- 📋 Validação de dados
-- 📋 Segurança da integração
-- 📋 Monitoramento e logging
+### **Stack de teste**
 
-### **Executar apenas estes testes:**
+`docker-compose.test.yml` sobe o backend + Postgres efêmero (tmpfs) em portas
+próprias (**18080** e **15432**), isolado do ambiente de dev (8080/5432). Os
+testes limpam e semeiam esse banco livremente.
+
 ```bash
-npm run test -- integration.e2e.test.js
+npm run stack:test:up      # build do ../jogatina e espera ficar saudável
+npm run test:integration   # Vitest: apiService + páginas contra o backend
+npm run test:e2e           # Playwright: navegador → Vite → proxy → backend
+npm run stack:test:down    # derruba e apaga o banco de teste
 ```
+
+Na primeira vez: `npx playwright install chromium`.
+Com Podman, o socket precisa estar ativo: `systemctl --user start podman.socket`.
+
+### **Estrutura**
+
+```
+tests/
+├── support/
+│   ├── backend.js              ← aguardar backend, limpar e semear o Postgres
+│   └── cenario.js              ← partidas de exemplo + ranking esperado
+├── integration/                ← vitest.integration.config.js
+│   ├── api.int.test.js         ← contrato do apiService com cada endpoint
+│   └── paginas.int.test.jsx    ← Ranking/Dashboard/SetupMesa com fetch real
+└── e2e/                        ← playwright.config.js
+    ├── mesa.spec.js            ← Criar Mesa → Setup → Organizar Mesas
+    └── ranking-dashboard.spec.js
+```
+
+Os dados são semeados direto no Postgres porque o backend ainda não tem
+endpoint para registrar partidas.
+
+### **Falhas esperadas (bugs conhecidos)**
+
+Testes marcados com `it.fails` / `test.fail()` descrevem o comportamento
+correto de algo que hoje está quebrado. Eles passam enquanto o bug existir;
+quando o bug for corrigido passam a falhar, e a marcação deve ser removida.
+
+- **`POST /api/games/finish` não existe no backend** (404), então
+  `registrarPartida` sempre falha com dados reais.
+
+`GET /dashboard/ranking/{id}` de jogador inexistente responde 200 com corpo
+vazio, e o frontend acaba falhando com erro de parse de JSON em vez de um 404.
 
 ---
 
