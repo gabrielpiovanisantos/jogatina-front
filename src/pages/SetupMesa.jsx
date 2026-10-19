@@ -1,22 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import './SetupMesa.css'; // Importando nosso novo arquivo de estilos!
 import apiService from '../services/api.js';
 import { MOCK_PLAYER_NAMES } from '../services/mockData.js';
 
 export default function SetupMesa({ dadosMesa, onVoltar }) {
     const [jogadoresConfirmados, setJogadoresConfirmados] = useState([]);
-    const [listaOficialJogadores, setListaOficialJogadores] = useState([]);
+    // Sempre usar lista mock para autocomplete (não há endpoint específico)
+    // O backend será chamado apenas quando organizar as mesas
+    const listaOficialJogadores = MOCK_PLAYER_NAMES;
 
     const [nomeDigitado, setNomeDigitado] = useState('');
     const [sugestoes, setSugestoes] = useState([]);
     const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
     const [indiceDestacado, setIndiceDestacado] = useState(-1);
-
-    useEffect(() => {
-        // Sempre usar lista mock para autocomplete (não há endpoint específico)
-        // O backend será chamado apenas quando organizar as mesas
-        setListaOficialJogadores(MOCK_PLAYER_NAMES);
-    }, []);
 
     const lidarComDigitacao = (e) => {
         const valor = e.target.value;
@@ -268,4 +264,4 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
                 )}
             </div>
     );
-}
+}

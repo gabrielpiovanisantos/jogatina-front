@@ -4,6 +4,10 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  // O Vitest 1.x roda sobre o Vite 5 interno, onde o @vitejs/plugin-react 6
+  // não configura o JSX; sem isso o esbuild usa o runtime clássico e exige
+  // `import React` em todo arquivo .jsx.
+  esbuild: { jsx: 'automatic' },
   test: {
     globals: true,
     environment: 'jsdom',
