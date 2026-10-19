@@ -207,6 +207,77 @@ describe('API Service', () => {
       let callArgs2 = globalThis.fetch.mock.calls[1];
       expect(callArgs2[0]).toEqual(expect.stringContaining('/dashboard/ranking/1'));
     });
+
+    it('given an unknown player when the backend responds 404 then throws', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 404 });
+
+      await expect(apiService.obterRankingJogador(999)).rejects.toThrow('Erro 404 ao obter ranking do jogador');
+    });
+  });
+
+  describe('listarJogadores', () => {
+    it('given registered players when listing players then sends a GET to /api/players and returns them', async () => {
+      const jogadores = [{ id: 1, name: 'Ana' }, { id: 2, name: 'Bruno' }];
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => jogadores });
+
+      const resultado = await apiService.listarJogadores();
+
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+      const [url, opcoes] = globalThis.fetch.mock.calls[0];
+      expect(new URL(url, 'http://base').pathname).toBe('/api/players');
+      expect(opcoes).toEqual(expect.objectContaining({ method: 'GET' }));
+      expect(resultado).toEqual(jogadores);
+    });
+
+    it('given an error response when listing players then throws', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 500 });
+
+      await expect(apiService.listarJogadores()).rejects.toThrow('Erro 500 ao listar jogadores');
+    });
+  });
+
+  describe('registrarPartida', () => {
+    const payload = {
+      dateTime: '2026-10-19T20:00:00.000Z',
+      results: [
+        { playerId: 1, faction: 'Marquise de Cat', points: 30, won: true },
+        { playerId: 2, faction: 'Vagabond', points: 22, won: false }
+      ]
+    };
+
+    it('given a game when registering it then sends a POST to /api/games/finish with the payload as JSON', async () => {
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ gameId: 7 }) });
+
+      const resultado = await apiService.registrarPartida(payload);
+
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+      const [url, opcoes] = globalThis.fetch.mock.calls[0];
+      expect(new URL(url, 'http://base').pathname).toBe('/api/games/finish');
+      expect(opcoes.method).toBe('POST');
+      expect(opcoes.headers).toEqual(expect.objectContaining({ 'Content-Type': 'application/json' }));
+      expect(JSON.parse(opcoes.body)).toEqual(payload);
+      expect(resultado).toEqual({ success: true });
+    });
+
+    it('given a backend validation error when registering then throws with the backend message', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        text: async () => 'Jogador repetido na mesma partida'
+      });
+
+      await expect(apiService.registrarPartida(payload)).rejects.toThrow('Jogador repetido na mesma partida');
+    });
+
+    it('given an error response without a body when registering then throws with the status', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 500, text: async () => '' });
+
+      await expect(apiService.registrarPartida(payload)).rejects.toThrow('Erro 500 ao registrar partida');
+    });
   });
 
   describe('Error handling', () => {
