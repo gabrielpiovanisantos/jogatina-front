@@ -125,10 +125,9 @@ describe('apiService ↔ real backend', () => {
       expect(bruno).toMatchObject({ playerId: ids.Bruno, ...RANKING_ESPERADO[1] });
     });
 
-    it('given an unknown player when getting a player ranking then rejects', async () => {
-      // O backend responde 200 com corpo vazio (o controller retorna null),
-      // então hoje o erro que chega ao frontend é de parse do JSON, não um 404.
-      await expect(apiService.obterRankingJogador(999)).rejects.toThrow();
+    it('given an unknown player when getting a player ranking then rejects with a 404', async () => {
+      // O backend responde 404 com corpo vazio para jogador inexistente.
+      await expect(apiService.obterRankingJogador(999)).rejects.toThrow('Erro 404 ao obter ranking do jogador');
     });
   });
 
