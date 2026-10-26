@@ -24,3 +24,10 @@ export const dataComHoraAtual = (aaaammdd) => {
     const agora = new Date();
     return new Date(ano, mes - 1, dia, agora.getHours(), agora.getMinutes(), agora.getSeconds());
 };
+
+// Mesma regra do backend: a partida pode ter até 5 minutos à frente de agora
+// (folga para relógio adiantado); depois disso é data no futuro e é recusada.
+export const TOLERANCIA_FUTURO_MS = 5 * 60 * 1000;
+
+export const dataNoFuturo = (dateTime, agora = new Date()) =>
+    new Date(dateTime).getTime() > agora.getTime() + TOLERANCIA_FUTURO_MS;

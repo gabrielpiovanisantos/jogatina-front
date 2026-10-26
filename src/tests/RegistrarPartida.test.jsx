@@ -174,6 +174,53 @@ describe('RegistrarPartida component', () => {
     expect(paraAAAAMMDD(new Date(apiService.registrarPartida.mock.calls[0][0].dateTime))).toBe('2026-10-01');
   });
 
+  it('given the date field when rendering then limits it to today in the user time zone', async () => {
+    apiService.listarJogadores.mockResolvedValue(JOGADORES);
+
+    render(<RegistrarPartida />);
+
+    const campo = await screen.findByLabelText('Data da partida:');
+    expect(campo).toHaveAttribute('max', paraAAAAMMDD(new Date()));
+    expect(campo).toHaveValue(paraAAAAMMDD(new Date()));
+  });
+
+  it('given today as the date when saving then sends today with the current time', async () => {
+    const user = userEvent.setup();
+    apiService.listarJogadores.mockResolvedValue(JOGADORES);
+    apiService.registrarPartida.mockResolvedValue({ success: true });
+
+    render(<RegistrarPartida />);
+
+    await user.selectOptions(await screen.findByLabelText('Jogador 1'), 'Ana');
+    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Malandro');
+    const antes = Date.now();
+    await user.click(screen.getByRole('button', { name: /Salvar Partida/i }));
+
+    await waitFor(() => expect(apiService.registrarPartida).toHaveBeenCalledTimes(1));
+    const enviada = new Date(apiService.registrarPartida.mock.calls[0][0].dateTime);
+    expect(paraAAAAMMDD(enviada)).toBe(paraAAAAMMDD(new Date()));
+    // dataComHoraAtual descarta os milissegundos
+    expect(enviada.getTime()).toBeGreaterThanOrEqual(Math.floor(antes / 1000) * 1000);
+    expect(enviada.getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
+  it('given the backend rejects a future date with 400 when saving then alerts the message and keeps the form', async () => {
+    const user = userEvent.setup();
+    apiService.listarJogadores.mockResolvedValue(JOGADORES);
+    apiService.registrarPartida.mockRejectedValue(new Error('Data da partida não pode estar no futuro'));
+
+    render(<RegistrarPartida />);
+
+    await user.selectOptions(await screen.findByLabelText('Jogador 1'), 'Ana');
+    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Malandro');
+    await user.click(screen.getByRole('button', { name: /Salvar Partida/i }));
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('⚠️ Falha ao registrar partida: Data da partida não pode estar no futuro'));
+    expect(screen.getByLabelText('Data da partida:')).toHaveValue(paraAAAAMMDD(new Date()));
+    expect(screen.getByLabelText('Jogador 1')).toHaveDisplayValue('Ana');
+    expect(screen.getByDisplayValue('Malandro')).toBeInTheDocument();
+  });
+
   it('given a saved game when saving succeeds then advances to the next game of the day', async () => {
     const user = userEvent.setup();
     apiService.listarJogadores.mockResolvedValue(JOGADORES);

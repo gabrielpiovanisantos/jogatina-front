@@ -1,6 +1,7 @@
 // Serviço centralizado para chamadas à API
 import { MOCK_PLAYERS, MOCK_RANKING, MOCK_FACCOES, MOCK_FACCOES_OFICIAIS, desempenhoFaccaoMock, faccoesDoJogadorMock, gerarMesasMock, mockTemDadosNoPeriodo } from './mockData.js';
 import { limitesDoPeriodo, PERIODO_PADRAO } from '../utils/periodo.js';
+import { dataNoFuturo } from '../utils/datas.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?
   (import.meta.env.VITE_API_URL === '/' ? '' : import.meta.env.VITE_API_URL) :
@@ -408,6 +409,10 @@ export const apiService = {
     if (USE_MOCK_DATA) {
       console.info('[api] Usando dados estáticos (mock) em registrarPartida', payload);
       await aguardar();
+      // Mesma ordem do backend: a data vem antes das facções
+      if (dataNoFuturo(payload.dateTime)) {
+        throw new Error('Data da partida não pode estar no futuro');
+      }
       // Mesma validação do backend: ignora maiúsculas e espaços nas pontas, acentos contam
       const oficiais = MOCK_FACCOES_OFICIAIS.map(f => f.toLowerCase());
       const invalidas = payload.results
