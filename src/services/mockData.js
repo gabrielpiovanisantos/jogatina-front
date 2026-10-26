@@ -28,6 +28,45 @@ export const MOCK_RANKING = [
   { playerId: 7, playerName: 'Bruno', totalScore: 15, totalGames: 7, totalVictories: 1, differentFactions: 2 }
 ];
 
+// Mesmo formato de GET /dashboard/factions, já ordenado como o backend faria:
+// winPercentage, totalVictories e totalGames decrescentes, depois o nome.
+export const MOCK_FACCOES = [
+  { faction: 'Marquise de Cat', totalGames: 18, totalVictories: 6, winPercentage: 33.3, totalScore: 432, averageScore: 24.0, distinctPlayers: 6 },
+  { faction: 'Woodland Alliance', totalGames: 12, totalVictories: 4, winPercentage: 33.3, totalScore: 276, averageScore: 23.0, distinctPlayers: 5 },
+  { faction: 'Eyrie Dynasties', totalGames: 16, totalVictories: 5, winPercentage: 31.3, totalScore: 352, averageScore: 22.0, distinctPlayers: 6 },
+  { faction: 'Vagabond', totalGames: 14, totalVictories: 4, winPercentage: 28.6, totalScore: 294, averageScore: 21.0, distinctPlayers: 5 },
+  { faction: 'Riverfolk Company', totalGames: 8, totalVictories: 2, winPercentage: 25.0, totalScore: 164, averageScore: 20.5, distinctPlayers: 4 },
+  { faction: 'Lizard Cult', totalGames: 6, totalVictories: 1, winPercentage: 16.7, totalScore: 117, averageScore: 19.5, distinctPlayers: 3 },
+  { faction: 'Underground Duchy', totalGames: 7, totalVictories: 1, winPercentage: 14.3, totalScore: 133, averageScore: 19.0, distinctPlayers: 4 },
+  { faction: 'Corvid Conspiracy', totalGames: 5, totalVictories: 0, winPercentage: 0.0, totalScore: 85, averageScore: 17.0, distinctPlayers: 3 }
+];
+
+const arredondar = (n) => Math.round(n * 10) / 10;
+
+// Detalhe de GET /dashboard/factions/{faction} em modo mock. Como no backend,
+// o nome ignora maiúsculas e espaços nas pontas. Os números por jogador são
+// ilustrativos e não fecham com o total da facção.
+export const desempenhoFaccaoMock = (faction) => {
+  const chave = String(faction).trim().toLowerCase();
+  const resumo = MOCK_FACCOES.find(f => f.faction.toLowerCase() === chave);
+  if (!resumo) return null;
+  const players = MOCK_RANKING.slice(0, 4).map((jogador, i) => {
+    const totalGames = Math.max(1, Math.round(resumo.totalGames / (i + 2)));
+    const totalVictories = Math.min(totalGames, Math.max(0, resumo.totalVictories - i - 1));
+    const averageScore = arredondar(resumo.averageScore + 2 - i);
+    return {
+      playerId: jogador.playerId,
+      playerName: jogador.playerName,
+      totalGames,
+      totalVictories,
+      winPercentage: arredondar((totalVictories / totalGames) * 100),
+      totalScore: Math.round(averageScore * totalGames),
+      averageScore
+    };
+  });
+  return { ...resumo, players };
+};
+
 /**
  * Simula o algoritmo de organização de mesas do backend,
  * distribuindo os jogadores confirmados em grupos.

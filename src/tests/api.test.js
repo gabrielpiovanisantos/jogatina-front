@@ -216,6 +216,70 @@ describe('API Service', () => {
     });
   });
 
+  describe('listarFaccoes', () => {
+    it('given faction results when listing factions then sends a GET to /dashboard/factions and returns them', async () => {
+      const faccoes = [
+        { faction: 'Stark', totalGames: 4, totalVictories: 3, winPercentage: 75.0, totalScore: 120, averageScore: 30.0, distinctPlayers: 2 }
+      ];
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => faccoes });
+
+      const resultado = await apiService.listarFaccoes();
+
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+      const [url, opcoes] = globalThis.fetch.mock.calls[0];
+      expect(new URL(url, 'http://base').pathname).toBe('/dashboard/factions');
+      expect(opcoes).toEqual(expect.objectContaining({ method: 'GET' }));
+      expect(resultado).toEqual(faccoes);
+    });
+
+    it('given no results when listing factions then returns an empty array', async () => {
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
+
+      await expect(apiService.listarFaccoes()).resolves.toEqual([]);
+    });
+
+    it('given an error response when listing factions then throws', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 500 });
+
+      await expect(apiService.listarFaccoes()).rejects.toThrow('Erro 500 ao listar facções');
+    });
+  });
+
+  describe('obterFaccao', () => {
+    it('given a faction when getting it then sends a GET to /dashboard/factions/{faction} and returns the detail', async () => {
+      const detalhe = {
+        faction: 'Stark', totalGames: 4, totalVictories: 3, winPercentage: 75.0, totalScore: 120, averageScore: 30.0, distinctPlayers: 2,
+        players: [{ playerId: 1, playerName: 'Alice', totalGames: 3, totalVictories: 3, winPercentage: 100.0, totalScore: 90, averageScore: 30.0 }]
+      };
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => detalhe });
+
+      const resultado = await apiService.obterFaccao('Stark');
+
+      const [url, opcoes] = globalThis.fetch.mock.calls[0];
+      expect(new URL(url, 'http://base').pathname).toBe('/dashboard/factions/Stark');
+      expect(opcoes).toEqual(expect.objectContaining({ method: 'GET' }));
+      expect(resultado).toEqual(detalhe);
+    });
+
+    it('given a faction name with spaces when getting it then encodes the name in the path', async () => {
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+
+      await apiService.obterFaccao('Marquise de Cat');
+
+      expect(globalThis.fetch.mock.calls[0][0]).toEqual(
+        expect.stringContaining('/dashboard/factions/Marquise%20de%20Cat')
+      );
+    });
+
+    it('given an unknown faction when the backend responds 404 then throws', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 404 });
+
+      await expect(apiService.obterFaccao('Lannister')).rejects.toThrow('Erro 404 ao obter facção');
+    });
+  });
+
   describe('listarJogadores', () => {
     it('given registered players when listing players then sends a GET to /api/players and returns them', async () => {
       const jogadores = [{ id: 1, name: 'Ana' }, { id: 2, name: 'Bruno' }];

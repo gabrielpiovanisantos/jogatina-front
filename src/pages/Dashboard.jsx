@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import apiService from '../services/api.js';
 import './Dashboard.css';
 
-export default function Dashboard() {
+export default function Dashboard({ onVerFaccoes }) {
     const [jogadores, setJogadores] = useState([]);
     const [jogadorSelecionadoId, setJogadorSelecionadoId] = useState('');
     const [carregando, setCarregando] = useState(true);
@@ -36,6 +36,14 @@ export default function Dashboard() {
     return (
         <div className="dashboard-container">
             <h1>📊 Dashboard</h1>
+
+            {onVerFaccoes && (
+                <div className="atalhos-dashboard">
+                    <button type="button" className="botao-faccoes" onClick={onVerFaccoes}>
+                        🛡️ Ver desempenho das facções
+                    </button>
+                </div>
+            )}
 
             {carregando ? (
                 <div>⏳ Carregando dashboard...</div>

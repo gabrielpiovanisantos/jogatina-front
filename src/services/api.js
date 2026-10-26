@@ -1,5 +1,5 @@
 // Serviço centralizado para chamadas à API
-import { MOCK_PLAYERS, MOCK_RANKING, gerarMesasMock } from './mockData.js';
+import { MOCK_PLAYERS, MOCK_RANKING, MOCK_FACCOES, desempenhoFaccaoMock, gerarMesasMock } from './mockData.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?
   (import.meta.env.VITE_API_URL === '/' ? '' : import.meta.env.VITE_API_URL) :
@@ -134,6 +134,68 @@ export const apiService = {
       return data;
     } catch (error) {
       console.error('Erro ao obter ranking do jogador:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtém o desempenho de todas as facções
+   * @returns {Promise} Lista de { faction, totalGames, totalVictories, winPercentage, totalScore, averageScore, distinctPlayers }, já ordenada pelo backend
+   */
+  listarFaccoes: async () => {
+    if (USE_MOCK_DATA) {
+      console.info('[api] Usando dados estáticos (mock) em listarFaccoes');
+      await aguardar();
+      return MOCK_FACCOES.map(faccao => ({ ...faccao }));
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/dashboard/factions`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status} ao listar facções`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Erro ao listar facções:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtém o desempenho de uma facção, com o detalhe por jogador
+   * @param {String} faccao - Nome da facção (o backend ignora maiúsculas e espaços nas pontas)
+   * @returns {Promise} Os mesmos campos de listarFaccoes e mais players: [{ playerId, playerName, totalGames, totalVictories, winPercentage, totalScore, averageScore }]
+   */
+  obterFaccao: async (faccao) => {
+    if (USE_MOCK_DATA) {
+      console.info('[api] Usando dados estáticos (mock) em obterFaccao');
+      await aguardar();
+      const detalhe = desempenhoFaccaoMock(faccao);
+      if (!detalhe) {
+        throw new Error(`Facção ${faccao} não encontrada`);
+      }
+      return detalhe;
+    }
+
+    try {
+      // Nomes de facção têm espaços. Um "/" no nome não funciona no path (limitação do backend).
+      const response = await fetch(`${API_BASE_URL}/dashboard/factions/${encodeURIComponent(faccao)}`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status} ao obter facção`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Erro ao obter facção:', error);
       throw error;
     }
   },

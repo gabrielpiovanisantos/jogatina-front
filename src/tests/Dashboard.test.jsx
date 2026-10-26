@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import Dashboard from '../pages/Dashboard.jsx';
 import * as apiService from '../services/api.js';
 
@@ -101,5 +102,15 @@ describe('Dashboard component', () => {
     await waitFor(() => {
       expect(screen.getByText(/⚠️ Erro ao carregar jogadores/i)).toBeInTheDocument();
     });
+  });
+
+  it('given a faction navigation handler when clicking the factions button then calls it', async () => {
+    apiService.default.obterRanking.mockResolvedValueOnce([]);
+    const onVerFaccoes = vi.fn();
+
+    render(<Dashboard onVerFaccoes={onVerFaccoes} />);
+    await userEvent.click(screen.getByRole('button', { name: /desempenho das facções/i }));
+
+    expect(onVerFaccoes).toHaveBeenCalledTimes(1);
   });
 });
