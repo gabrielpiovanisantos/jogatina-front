@@ -76,7 +76,7 @@ describe('Dashboard component', () => {
 
     expect(screen.getByText(/Partidas Jogadas/i)).toBeInTheDocument();
     expect(screen.getByText(/Facções Diferentes/i)).toBeInTheDocument();
-    expect(screen.getByText('Vitórias')).toBeInTheDocument();
+    expect(screen.getByText('Vitórias', { selector: '.card-rotulo' })).toBeInTheDocument();
   });
 
   it('given a ranking when choosing another player then shows that player statistics', async () => {
