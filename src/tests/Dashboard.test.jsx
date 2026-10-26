@@ -46,7 +46,7 @@ describe('Dashboard component', () => {
     apiService.default.obterRanking.mockResolvedValueOnce([]);
     render(<Dashboard />);
 
-    expect(await screen.findByText(/📊 Dashboard/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('👤 Dashboard de Jogadores');
   });
 
   it('given a pending request when rendering then shows the loading message', () => {
@@ -126,14 +126,15 @@ describe('Dashboard component', () => {
     });
   });
 
-  it('given a faction navigation handler when clicking the factions button then calls it', async () => {
-    apiService.default.obterRanking.mockResolvedValueOnce([]);
-    const onVerFaccoes = vi.fn();
+  it('given the players dashboard when rendering then has no shortcut to the factions dashboard', async () => {
+    apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
 
-    render(<Dashboard onVerFaccoes={onVerFaccoes} />);
-    await userEvent.click(screen.getByRole('button', { name: /desempenho das facções/i }));
+    render(<Dashboard onSelecionarFaccao={vi.fn()} />);
+    await screen.findByRole('table');
 
-    expect(onVerFaccoes).toHaveBeenCalledTimes(1);
+    // A navegação entre os dashboards fica na navbar; aqui só os links de cada facção
+    expect(screen.queryByRole('button', { name: /desempenho das facções/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Dashboard de Facções/)).not.toBeInTheDocument();
   });
 
   describe('player factions', () => {

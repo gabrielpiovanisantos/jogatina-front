@@ -5,7 +5,9 @@ import { PERIODO_PADRAO, temFiltro, descreverPeriodo } from '../utils/periodo.js
 import SeletorPeriodo from '../components/SeletorPeriodo.jsx';
 import './Faccoes.css';
 
-export default function Faccoes({ onSelecionarFaccao, onVoltar, periodo = PERIODO_PADRAO, onMudarPeriodo }) {
+// Dashboard de facções: ranking de todas as facções; cada uma abre o seu detalhe.
+// O de jogadores é a tela Dashboard; os dois compartilham o período.
+export default function Faccoes({ onSelecionarFaccao, periodo = PERIODO_PADRAO, onMudarPeriodo }) {
     const [faccoes, setFaccoes] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState(null);
@@ -37,11 +39,7 @@ export default function Faccoes({ onSelecionarFaccao, onVoltar, periodo = PERIOD
 
     return (
         <div className="faccoes-container">
-            <button type="button" className="botao-voltar" onClick={onVoltar}>
-                ← Voltar ao dashboard
-            </button>
-
-            <h1>🛡️ Facções</h1>
+            <h1>🛡️ Dashboard de Facções</h1>
 
             {onMudarPeriodo && <SeletorPeriodo periodo={periodo} onMudar={onMudarPeriodo} />}
 

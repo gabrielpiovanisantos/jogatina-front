@@ -43,7 +43,7 @@ test.describe('Ranking and Dashboard with backend data', () => {
     await semear(CENARIO_RANKING);
     await page.goto('/');
 
-    await page.getByRole('button', { name: '📊 Dashboard' }).click();
+    await page.getByRole('button', { name: '👤 Jogadores' }).click();
     const seletor = page.getByLabel('Jogador:');
     await expect(seletor.locator('option')).toHaveText(RANKING_ESPERADO.map(j => j.playerName));
 

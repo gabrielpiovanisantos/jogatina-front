@@ -6,7 +6,9 @@ import SeletorPeriodo from '../components/SeletorPeriodo.jsx';
 import './Dashboard.css';
 import './Faccoes.css';
 
-export default function Dashboard({ onVerFaccoes, onSelecionarFaccao, periodo = PERIODO_PADRAO, onMudarPeriodo }) {
+// Dashboard de jogadores: um jogador por vez, com cards e as facções que ele jogou.
+// O de facções é a tela Faccoes; os dois compartilham o período.
+export default function Dashboard({ onSelecionarFaccao, periodo = PERIODO_PADRAO, onMudarPeriodo }) {
     const [jogadores, setJogadores] = useState([]);
     const [jogadorSelecionadoId, setJogadorSelecionadoId] = useState('');
     const [carregando, setCarregando] = useState(true);
@@ -81,17 +83,9 @@ export default function Dashboard({ onVerFaccoes, onSelecionarFaccao, periodo = 
 
     return (
         <div className="dashboard-container">
-            <h1>📊 Dashboard</h1>
+            <h1>👤 Dashboard de Jogadores</h1>
 
             {onMudarPeriodo && <SeletorPeriodo periodo={periodo} onMudar={onMudarPeriodo} />}
-
-            {onVerFaccoes && (
-                <div className="atalhos-dashboard">
-                    <button type="button" className="botao-faccoes" onClick={onVerFaccoes}>
-                        🛡️ Ver desempenho das facções
-                    </button>
-                </div>
-            )}
 
             {carregando ? (
                 <div>⏳ Carregando dashboard...</div>

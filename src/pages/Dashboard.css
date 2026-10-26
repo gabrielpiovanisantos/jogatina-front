@@ -29,27 +29,6 @@
     border-left: 4px solid #c62828;
 }
 
-.atalhos-dashboard {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 25px;
-}
-
-.botao-faccoes {
-    background-color: #4a7c59;
-    color: #ffffff;
-    border: none;
-    border-radius: 5px;
-    padding: 10px 20px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.botao-faccoes:hover {
-    background-color: #5d9a6f;
-}
-
 .seletor-jogador {
     display: flex;
     align-items: center;

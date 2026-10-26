@@ -27,11 +27,11 @@ describe('App faction navigation', () => {
     apiService.default.obterFaccao.mockResolvedValue(DETALHE);
   });
 
-  it('given the dashboard when navigating to a faction then shows its detail and keeps it in the url', async () => {
-    window.history.replaceState(null, '', '#dashboard');
+  it('given the navbar when clicking Facções and then a faction then shows its detail and keeps it in the url', async () => {
+    window.history.replaceState(null, '', '#jogadores');
     render(<App />);
 
-    await userEvent.click(await screen.findByRole('button', { name: /desempenho das facções/i }));
+    await userEvent.click(screen.getByRole('button', { name: '🛡️ Facções' }));
     expect(window.location.hash).toBe('#faccoes');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Aliança da Floresta' }));
@@ -47,7 +47,7 @@ describe('App faction navigation', () => {
     apiService.default.obterRankingJogador.mockResolvedValue({
       playerId: 1, factions: [{ faction: 'Aliança da Floresta', totalGames: 4, totalVictories: 3, winPercentage: 75.0, totalScore: 120, averageScore: 30.0 }]
     });
-    window.history.replaceState(null, '', '#dashboard');
+    window.history.replaceState(null, '', '#jogadores');
     render(<App />);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Aliança da Floresta' }));
@@ -90,14 +90,14 @@ describe('App faction navigation', () => {
     expect(window.location.hash).toBe('#faccao/Alian%C3%A7a%20da%20Floresta?periodo=2026-01-01_2026-03-31');
   });
 
-  it('given a period chosen on the dashboard when going to the factions then keeps the same period', async () => {
-    window.history.replaceState(null, '', '#dashboard');
+  it('given a period chosen on the players dashboard when going to the factions tab then keeps the same period', async () => {
+    window.history.replaceState(null, '', '#jogadores');
     render(<App />);
 
     await userEvent.selectOptions(await screen.findByLabelText('Período:'), 'Este ano');
-    expect(window.location.hash).toBe('#dashboard?periodo=ano');
+    expect(window.location.hash).toBe('#jogadores?periodo=ano');
 
-    await userEvent.click(screen.getByRole('button', { name: /desempenho das facções/i }));
+    await userEvent.click(screen.getByRole('button', { name: '🛡️ Facções' }));
 
     await screen.findByRole('button', { name: 'Aliança da Floresta' });
     expect(apiService.default.listarFaccoes).toHaveBeenLastCalledWith('ano');
@@ -115,11 +115,74 @@ describe('App faction navigation', () => {
   });
 
   it('given a period when leaving the dashboards then drops it from the url', async () => {
-    window.history.replaceState(null, '', '#dashboard?periodo=12m');
+    window.history.replaceState(null, '', '#jogadores?periodo=12m');
     render(<App />);
 
     await userEvent.click(screen.getByRole('button', { name: /Criar Mesa/i }));
 
     expect(window.location.hash).toBe('#criar');
+  });
+});
+
+describe('App dashboards tabs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    apiService.default.obterRanking.mockResolvedValue([]);
+    apiService.default.obterRankingJogador.mockResolvedValue({ factions: [] });
+    apiService.default.listarFaccoes.mockResolvedValue([DETALHE]);
+    apiService.default.obterFaccao.mockResolvedValue(DETALHE);
+  });
+
+  const abaAtiva = () => screen.getAllByRole('button').filter(b => b.classList.contains('active')).map(b => b.textContent);
+
+  it('given the navbar when rendering then has separate Jogadores and Facções tabs and no generic Dashboard', () => {
+    window.history.replaceState(null, '', '#criar');
+    render(<App />);
+
+    expect(screen.getByRole('button', { name: '👤 Jogadores' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '🛡️ Facções' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /📊 Dashboard/ })).not.toBeInTheDocument();
+  });
+
+  it('given the Jogadores tab when clicking it then shows only the players dashboard and marks the tab', async () => {
+    window.history.replaceState(null, '', '#criar');
+    render(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: '👤 Jogadores' }));
+
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('👤 Dashboard de Jogadores');
+    expect(window.location.hash).toBe('#jogadores');
+    expect(abaAtiva()).toEqual(['👤 Jogadores']);
+    expect(apiService.default.listarFaccoes).not.toHaveBeenCalled();
+  });
+
+  it('given the Facções tab when clicking it then shows only the factions dashboard and marks the tab', async () => {
+    window.history.replaceState(null, '', '#criar');
+    render(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: '🛡️ Facções' }));
+
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('🛡️ Dashboard de Facções');
+    expect(abaAtiva()).toEqual(['🛡️ Facções']);
+    expect(apiService.default.obterRanking).not.toHaveBeenCalled();
+  });
+
+  it('given a faction detail when rendering then marks the Facções tab', async () => {
+    window.history.replaceState(null, '', '#faccao/Alian%C3%A7a%20da%20Floresta');
+    render(<App />);
+
+    await screen.findByText(/Desempenho por jogador/i);
+    expect(abaAtiva()).toEqual(['🛡️ Facções']);
+  });
+
+  it.each([
+    ['#dashboard', '#jogadores'],
+    ['#dashboard?periodo=3m', '#jogadores?periodo=3m']
+  ])('given the old route %s when loading then redirects to %s', async (antiga, nova) => {
+    window.history.replaceState(null, '', antiga);
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('👤 Dashboard de Jogadores');
+    expect(window.location.hash).toBe(nova);
   });
 });
