@@ -33,7 +33,7 @@ describe('FaccaoDetalhe component', () => {
     render(<FaccaoDetalhe faccao="Stark" onVoltar={vi.fn()} />);
 
     await screen.findByText('Alice');
-    expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Stark');
+    expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Stark', 'tudo');
   });
 
   it('given a pending request when rendering then shows the loading message', () => {
@@ -96,5 +96,54 @@ describe('FaccaoDetalhe component', () => {
     await userEvent.click(screen.getByRole('button', { name: /Voltar às facções/i }));
 
     expect(onVoltar).toHaveBeenCalledTimes(1);
+  });
+
+  it('given a period when rendering then requests the faction for it', async () => {
+    apiService.default.obterFaccao.mockResolvedValueOnce(DETALHE);
+
+    render(<FaccaoDetalhe faccao="Stark" onVoltar={vi.fn()} periodo="12m" onMudarPeriodo={vi.fn()} />);
+
+    await screen.findByText('Alice');
+    expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Stark', '12m');
+  });
+
+  it('given a period when the backend responds 404 then shows the empty period message, not an error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    apiService.default.obterFaccao.mockRejectedValueOnce(
+      Object.assign(new Error('Erro 404 ao obter facção'), { status: 404 })
+    );
+
+    render(<FaccaoDetalhe faccao="Stark" onVoltar={vi.fn()} periodo="3m" onMudarPeriodo={vi.fn()} />);
+
+    expect(await screen.findByText(/Nenhuma partida de Stark no período \(últimos 3 meses\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/⚠️/)).not.toBeInTheDocument();
+    expect(consoleSpy).not.toHaveBeenCalled();
+  });
+
+  it('given no period when the backend responds 404 then still shows it as an error', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    apiService.default.obterFaccao.mockRejectedValueOnce(
+      Object.assign(new Error('Erro 404 ao obter facção'), { status: 404 })
+    );
+
+    render(<FaccaoDetalhe faccao="Lannister" onVoltar={vi.fn()} periodo="tudo" onMudarPeriodo={vi.fn()} />);
+
+    expect(await screen.findByText(/⚠️ Erro ao carregar a facção Lannister: Erro 404/)).toBeInTheDocument();
+    expect(screen.queryByText(/Nenhuma partida de/)).not.toBeInTheDocument();
+  });
+
+  it('given a period with games when the period changes to an empty one then replaces the tables with the empty message', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    apiService.default.obterFaccao
+      .mockResolvedValueOnce(DETALHE)
+      .mockRejectedValueOnce(Object.assign(new Error('Erro 404 ao obter facção'), { status: 404 }));
+
+    const { rerender } = render(<FaccaoDetalhe faccao="Stark" onVoltar={vi.fn()} periodo="tudo" onMudarPeriodo={vi.fn()} />);
+    await screen.findByText('Alice');
+
+    rerender(<FaccaoDetalhe faccao="Stark" onVoltar={vi.fn()} periodo="3m" onMudarPeriodo={vi.fn()} />);
+
+    expect(await screen.findByText(/Nenhuma partida de Stark no período/)).toBeInTheDocument();
+    expect(screen.queryByText('Alice')).not.toBeInTheDocument();
   });
 });

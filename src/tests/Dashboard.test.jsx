@@ -143,7 +143,7 @@ describe('Dashboard component', () => {
       render(<Dashboard />);
 
       const tabela = await screen.findByRole('table');
-      expect(apiService.default.obterRankingJogador).toHaveBeenCalledWith('1');
+      expect(apiService.default.obterRankingJogador).toHaveBeenCalledWith('1', 'tudo');
       const linhas = within(tabela).getAllByRole('row').slice(1);
       expect(linhas.map(l => within(l).getAllByRole('cell')[0].textContent)).toEqual(['🏆 Marqueses', 'Malandro']);
       expect(within(linhas[0]).getByText('100,0%')).toBeInTheDocument();
@@ -191,7 +191,7 @@ describe('Dashboard component', () => {
 
       expect(await screen.findByRole('cell', { name: 'Companhia Ribeirinha' })).toBeInTheDocument();
       expect(screen.queryByText('Marqueses')).not.toBeInTheDocument();
-      expect(apiService.default.obterRankingJogador).toHaveBeenLastCalledWith('2');
+      expect(apiService.default.obterRankingJogador).toHaveBeenLastCalledWith('2', 'tudo');
     });
 
     it('given a slow answer for the previous player when switching then keeps the current player factions', async () => {
@@ -232,6 +232,74 @@ describe('Dashboard component', () => {
       await userEvent.click(await screen.findByRole('button', { name: 'Malandro' }));
 
       expect(onSelecionarFaccao).toHaveBeenCalledWith('Malandro');
+    });
+  });
+
+  describe('period filter', () => {
+    const COM_ZEROS = [
+      { ...JOGADORES[0] },
+      { ...JOGADORES[1], totalGames: 0, totalVictories: 0, differentFactions: 0, totalScore: 0 }
+    ];
+
+    it('given a period when rendering then requests the ranking and the player detail for it', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+
+      render(<Dashboard periodo="3m" onMudarPeriodo={vi.fn()} />);
+
+      await screen.findByRole('table');
+      expect(apiService.default.obterRanking).toHaveBeenCalledWith('3m');
+      expect(apiService.default.obterRankingJogador).toHaveBeenCalledWith('1', '3m');
+    });
+
+    it('given a period when some players did not play in it then hides them from the selector', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(COM_ZEROS);
+
+      render(<Dashboard periodo="3m" onMudarPeriodo={vi.fn()} />);
+
+      const seletor = await screen.findByLabelText('Jogador:');
+      expect(Array.from(seletor.options).map(o => o.textContent)).toEqual(['Ana']);
+    });
+
+    it('given no period when some players have zero games then still lists them', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(COM_ZEROS);
+
+      render(<Dashboard periodo="tudo" onMudarPeriodo={vi.fn()} />);
+
+      const seletor = await screen.findByLabelText('Jogador:');
+      expect(Array.from(seletor.options).map(o => o.textContent)).toEqual(['Ana', 'Bruno']);
+    });
+
+    it('given a period nobody played in when rendering then shows the empty period message', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(COM_ZEROS.map(j => ({ ...j, totalGames: 0 })));
+
+      render(<Dashboard periodo="2024-01-01_2024-12-31" onMudarPeriodo={vi.fn()} />);
+
+      expect(await screen.findByText(/Nenhuma partida no período \(de 01\/01\/2024 a 31\/12\/2024\)/)).toBeInTheDocument();
+      expect(screen.queryByLabelText('Jogador:')).not.toBeInTheDocument();
+      expect(apiService.default.obterRankingJogador).not.toHaveBeenCalled();
+    });
+
+    it('given a selected player when the period changes and the player is still listed then keeps them selected', async () => {
+      apiService.default.obterRanking.mockResolvedValue(JOGADORES);
+
+      const { rerender } = render(<Dashboard periodo="tudo" onMudarPeriodo={vi.fn()} />);
+      fireEvent.change(await screen.findByLabelText('Jogador:'), { target: { value: '2' } });
+      await screen.findByRole('cell', { name: 'Companhia Ribeirinha' });
+
+      rerender(<Dashboard periodo="ano" onMudarPeriodo={vi.fn()} />);
+
+      await waitFor(() => expect(apiService.default.obterRankingJogador).toHaveBeenLastCalledWith('2', 'ano'));
+      expect(screen.getByLabelText('Jogador:')).toHaveDisplayValue('Bruno');
+    });
+
+    it('given the period selector when choosing a shortcut then reports it to the parent', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+      const onMudarPeriodo = vi.fn();
+
+      render(<Dashboard periodo="tudo" onMudarPeriodo={onMudarPeriodo} />);
+      await userEvent.selectOptions(screen.getByLabelText('Período:'), 'Últimos 12 meses');
+
+      expect(onMudarPeriodo).toHaveBeenCalledWith('12m');
     });
   });
 });

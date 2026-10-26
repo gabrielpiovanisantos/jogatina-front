@@ -102,4 +102,22 @@ describe('Faccoes component', () => {
 
     expect(onVoltar).toHaveBeenCalledTimes(1);
   });
+
+  it('given a period when rendering then requests the factions for it', async () => {
+    apiService.default.listarFaccoes.mockResolvedValueOnce(FACCOES);
+
+    render(<Faccoes onSelecionarFaccao={vi.fn()} onVoltar={vi.fn()} periodo="ano" onMudarPeriodo={vi.fn()} />);
+
+    await screen.findByText('Stark');
+    expect(apiService.default.listarFaccoes).toHaveBeenCalledWith('ano');
+    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('Este ano');
+  });
+
+  it('given a period without games when rendering then shows the empty period message', async () => {
+    apiService.default.listarFaccoes.mockResolvedValueOnce([]);
+
+    render(<Faccoes onSelecionarFaccao={vi.fn()} onVoltar={vi.fn()} periodo="3m" onMudarPeriodo={vi.fn()} />);
+
+    expect(await screen.findByText(/Nenhuma facção jogada no período \(últimos 3 meses\)/)).toBeInTheDocument();
+  });
 });

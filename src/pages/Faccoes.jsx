@@ -1,31 +1,39 @@
 import { useState, useEffect } from 'react';
 import apiService from '../services/api.js';
 import { formatarPorcentagem, formatarMedia } from '../utils/faccoes.js';
+import { PERIODO_PADRAO, temFiltro, descreverPeriodo } from '../utils/periodo.js';
+import SeletorPeriodo from '../components/SeletorPeriodo.jsx';
 import './Faccoes.css';
 
-export default function Faccoes({ onSelecionarFaccao, onVoltar }) {
+export default function Faccoes({ onSelecionarFaccao, onVoltar, periodo = PERIODO_PADRAO, onMudarPeriodo }) {
     const [faccoes, setFaccoes] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState(null);
 
     useEffect(() => {
+        // Ignora a resposta de um período que já deixou de estar selecionado
+        let ignorar = false;
+
         const buscarFaccoes = async () => {
             try {
                 setCarregando(true);
                 setErro(null);
                 // A lista já vem ordenada pelo backend (aproveitamento primeiro)
-                const dados = await apiService.listarFaccoes();
-                setFaccoes(dados);
+                const dados = await apiService.listarFaccoes(periodo);
+                if (!ignorar) setFaccoes(dados);
             } catch (error) {
+                if (ignorar) return;
+                setFaccoes([]);
                 setErro(`Erro ao carregar facções: ${error.message}`);
                 console.error(error);
             } finally {
-                setCarregando(false);
+                if (!ignorar) setCarregando(false);
             }
         };
 
         buscarFaccoes();
-    }, []);
+        return () => { ignorar = true; };
+    }, [periodo]);
 
     return (
         <div className="faccoes-container">
@@ -34,6 +42,8 @@ export default function Faccoes({ onSelecionarFaccao, onVoltar }) {
             </button>
 
             <h1>🛡️ Facções</h1>
+
+            {onMudarPeriodo && <SeletorPeriodo periodo={periodo} onMudar={onMudarPeriodo} />}
 
             {carregando ? (
                 <div>⏳ Carregando facções...</div>
@@ -87,7 +97,9 @@ export default function Faccoes({ onSelecionarFaccao, onVoltar }) {
 
                     {!erro && faccoes.length === 0 && (
                         <div className="mensagem-vazia">
-                            Nenhuma facção jogada ainda. Registre uma partida para ver estatísticas! 🎮
+                            {temFiltro(periodo)
+                                ? `Nenhuma facção jogada no período (${descreverPeriodo(periodo)}). Escolha outro período. 📅`
+                                : 'Nenhuma facção jogada ainda. Registre uma partida para ver estatísticas! 🎮'}
                         </div>
                     )}
                 </>

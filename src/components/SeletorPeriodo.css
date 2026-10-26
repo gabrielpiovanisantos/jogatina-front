@@ -1,0 +1,40 @@
+.seletor-periodo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.seletor-periodo label {
+    font-weight: 600;
+    color: #c8e6c9;
+}
+
+.seletor-periodo select,
+.seletor-periodo input {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+.datas-periodo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.datas-periodo label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.aviso-periodo {
+    flex-basis: 100%;
+    text-align: center;
+    color: #f0a35e;
+    font-size: 0.95rem;
+}

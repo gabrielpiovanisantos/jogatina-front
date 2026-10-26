@@ -1,5 +1,6 @@
 // Serviço centralizado para chamadas à API
-import { MOCK_PLAYERS, MOCK_RANKING, MOCK_FACCOES, MOCK_FACCOES_OFICIAIS, desempenhoFaccaoMock, faccoesDoJogadorMock, gerarMesasMock } from './mockData.js';
+import { MOCK_PLAYERS, MOCK_RANKING, MOCK_FACCOES, MOCK_FACCOES_OFICIAIS, desempenhoFaccaoMock, faccoesDoJogadorMock, gerarMesasMock, mockTemDadosNoPeriodo } from './mockData.js';
+import { limitesDoPeriodo, PERIODO_PADRAO } from '../utils/periodo.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?
   (import.meta.env.VITE_API_URL === '/' ? '' : import.meta.env.VITE_API_URL) :
@@ -15,6 +16,20 @@ const aguardar = (ms = 400) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Partidas "registradas" no modo mock, para a numeração do dia avançar.
 const partidasMock = [];
+
+// "?from=...&to=..." dos dashboards para o período (veja utils/periodo.js).
+// Limite aberto não vai na URL; sem nenhum dos dois, o backend usa todo o histórico.
+const consultaDoPeriodo = (periodo) => {
+  const { from, to } = limitesDoPeriodo(periodo);
+  const params = new URLSearchParams();
+  if (from) params.set('from', from.toISOString());
+  if (to) params.set('to', to.toISOString());
+  const texto = params.toString();
+  return texto ? `?${texto}` : '';
+};
+
+// Erro com o status HTTP, para a tela distinguir um 404 dos demais erros
+const erroHttp = (status, mensagem) => Object.assign(new Error(mensagem), { status });
 
 export const apiService = {
   /**
@@ -107,17 +122,22 @@ export const apiService = {
 
   /**
    * Obtém o ranking de todos os jogadores
-   * @returns {Promise} Lista de jogadores com suas posições no ranking
+   * @param {String} [periodo] - Período do dashboard (utils/periodo.js); padrão: todo o histórico
+   * @returns {Promise} Lista de jogadores com suas posições no ranking. Com período, quem não
+   * jogou nele vem com zeros
    */
-  obterRanking: async () => {
+  obterRanking: async (periodo = PERIODO_PADRAO) => {
     if (USE_MOCK_DATA) {
       console.info('[api] Usando dados estáticos (mock) em obterRanking');
       await aguardar();
+      if (!mockTemDadosNoPeriodo(limitesDoPeriodo(periodo))) {
+        return MOCK_RANKING.map(j => ({ ...j, totalScore: 0, totalGames: 0, totalVictories: 0, differentFactions: 0 }));
+      }
       return MOCK_RANKING.map(jogador => ({ ...jogador }));
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboard/ranking`, {
+      const response = await fetch(`${API_BASE_URL}/dashboard/ranking${consultaDoPeriodo(periodo)}`, {
         method: 'GET'
       });
 
@@ -136,26 +156,30 @@ export const apiService = {
   /**
    * Obtém o ranking de um jogador específico
    * @param {Number|String} playerId - ID do jogador
+   * @param {String} [periodo] - Período do dashboard; padrão: todo o histórico
    * @returns {Promise} Dados de ranking do jogador, com factions: [{ faction, totalGames, totalVictories, winPercentage, totalScore, averageScore }] já ordenadas pelo backend
    */
-  obterRankingJogador: async (playerId) => {
+  obterRankingJogador: async (playerId, periodo = PERIODO_PADRAO) => {
     if (USE_MOCK_DATA) {
       console.info('[api] Usando dados estáticos (mock) em obterRankingJogador');
       await aguardar();
       const jogador = MOCK_RANKING.find(j => String(j.playerId) === String(playerId));
       if (!jogador) {
-        throw new Error(`Jogador ${playerId} não encontrado`);
+        throw erroHttp(404, `Jogador ${playerId} não encontrado`);
+      }
+      if (!mockTemDadosNoPeriodo(limitesDoPeriodo(periodo))) {
+        return { ...jogador, totalScore: 0, totalGames: 0, totalVictories: 0, differentFactions: 0, factions: [] };
       }
       return { ...jogador, factions: faccoesDoJogadorMock(jogador) };
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboard/ranking/${playerId}`, {
+      const response = await fetch(`${API_BASE_URL}/dashboard/ranking/${playerId}${consultaDoPeriodo(periodo)}`, {
         method: 'GET'
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ${response.status} ao obter ranking do jogador`);
+        throw erroHttp(response.status, `Erro ${response.status} ao obter ranking do jogador`);
       }
 
       const data = await response.json();
@@ -168,17 +192,19 @@ export const apiService = {
 
   /**
    * Obtém o desempenho de todas as facções
+   * @param {String} [periodo] - Período do dashboard; padrão: todo o histórico
    * @returns {Promise} Lista de { faction, totalGames, totalVictories, winPercentage, totalScore, averageScore, distinctPlayers }, já ordenada pelo backend
    */
-  listarFaccoes: async () => {
+  listarFaccoes: async (periodo = PERIODO_PADRAO) => {
     if (USE_MOCK_DATA) {
       console.info('[api] Usando dados estáticos (mock) em listarFaccoes');
       await aguardar();
+      if (!mockTemDadosNoPeriodo(limitesDoPeriodo(periodo))) return [];
       return MOCK_FACCOES.map(faccao => ({ ...faccao }));
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboard/factions`, {
+      const response = await fetch(`${API_BASE_URL}/dashboard/factions${consultaDoPeriodo(periodo)}`, {
         method: 'GET'
       });
 
@@ -197,27 +223,29 @@ export const apiService = {
   /**
    * Obtém o desempenho de uma facção, com o detalhe por jogador
    * @param {String} faccao - Nome da facção (o backend ignora maiúsculas e espaços nas pontas)
+   * @param {String} [periodo] - Período do dashboard; padrão: todo o histórico. Facção sem
+   * partidas no período também responde 404
    * @returns {Promise} Os mesmos campos de listarFaccoes e mais players: [{ playerId, playerName, totalGames, totalVictories, winPercentage, totalScore, averageScore }]
    */
-  obterFaccao: async (faccao) => {
+  obterFaccao: async (faccao, periodo = PERIODO_PADRAO) => {
     if (USE_MOCK_DATA) {
       console.info('[api] Usando dados estáticos (mock) em obterFaccao');
       await aguardar();
       const detalhe = desempenhoFaccaoMock(faccao);
-      if (!detalhe) {
-        throw new Error(`Facção ${faccao} não encontrada`);
+      if (!detalhe || !mockTemDadosNoPeriodo(limitesDoPeriodo(periodo))) {
+        throw erroHttp(404, `Facção ${faccao} não encontrada`);
       }
       return detalhe;
     }
 
     try {
       // Nomes de facção têm espaços. Um "/" no nome não funciona no path (limitação do backend).
-      const response = await fetch(`${API_BASE_URL}/dashboard/factions/${encodeURIComponent(faccao)}`, {
+      const response = await fetch(`${API_BASE_URL}/dashboard/factions/${encodeURIComponent(faccao)}${consultaDoPeriodo(periodo)}`, {
         method: 'GET'
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ${response.status} ao obter facção`);
+        throw erroHttp(response.status, `Erro ${response.status} ao obter facção`);
       }
 
       const data = await response.json();

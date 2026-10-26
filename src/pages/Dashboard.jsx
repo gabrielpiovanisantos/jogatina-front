@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import apiService from '../services/api.js';
 import { formatarPorcentagem, formatarMedia } from '../utils/faccoes.js';
+import { PERIODO_PADRAO, temFiltro, descreverPeriodo } from '../utils/periodo.js';
+import SeletorPeriodo from '../components/SeletorPeriodo.jsx';
 import './Dashboard.css';
 import './Faccoes.css';
 
-export default function Dashboard({ onVerFaccoes, onSelecionarFaccao }) {
+export default function Dashboard({ onVerFaccoes, onSelecionarFaccao, periodo = PERIODO_PADRAO, onMudarPeriodo }) {
     const [jogadores, setJogadores] = useState([]);
     const [jogadorSelecionadoId, setJogadorSelecionadoId] = useState('');
     const [carregando, setCarregando] = useState(true);
@@ -15,25 +17,37 @@ export default function Dashboard({ onVerFaccoes, onSelecionarFaccao }) {
     const [erroFaccoes, setErroFaccoes] = useState(null);
 
     useEffect(() => {
+        // Ignora a resposta de um período que já deixou de estar selecionado
+        let ignorar = false;
+
         const buscarJogadores = async () => {
             try {
                 setCarregando(true);
                 setErro(null);
-                const dados = await apiService.obterRanking();
-                setJogadores(dados);
-                if (dados && dados.length > 0) {
-                    setJogadorSelecionadoId(String(dados[0].playerId));
-                }
+                const dados = await apiService.obterRanking(periodo);
+                if (ignorar) return;
+                // Com período, o backend lista todo mundo e zera quem não jogou nele: escondemos esses
+                const visiveis = temFiltro(periodo) ? dados.filter(j => j.totalGames > 0) : dados;
+                setJogadores(visiveis);
+                // Mantém o jogador escolhido se ele continua na lista
+                setJogadorSelecionadoId(atual =>
+                    visiveis.some(j => String(j.playerId) === atual)
+                        ? atual
+                        : (visiveis.length > 0 ? String(visiveis[0].playerId) : '')
+                );
             } catch (error) {
+                if (ignorar) return;
+                setJogadores([]);
                 setErro(`Erro ao carregar jogadores: ${error.message}`);
                 console.error(error);
             } finally {
-                setCarregando(false);
+                if (!ignorar) setCarregando(false);
             }
         };
 
         buscarJogadores();
-    }, []);
+        return () => { ignorar = true; };
+    }, [periodo]);
 
     useEffect(() => {
         if (!jogadorSelecionadoId) return;
@@ -45,7 +59,7 @@ export default function Dashboard({ onVerFaccoes, onSelecionarFaccao }) {
                 setCarregandoFaccoes(true);
                 setErroFaccoes(null);
                 setFaccoesJogador([]);
-                const dados = await apiService.obterRankingJogador(jogadorSelecionadoId);
+                const dados = await apiService.obterRankingJogador(jogadorSelecionadoId, periodo);
                 if (!ignorar) setFaccoesJogador(dados?.factions ?? []);
             } catch (error) {
                 if (!ignorar) setErroFaccoes(`Erro ao carregar facções do jogador: ${error.message}`);
@@ -57,7 +71,7 @@ export default function Dashboard({ onVerFaccoes, onSelecionarFaccao }) {
 
         buscarFaccoesJogador();
         return () => { ignorar = true; };
-    }, [jogadorSelecionadoId]);
+    }, [jogadorSelecionadoId, periodo]);
 
     const faccoesVencedoras = faccoesJogador.filter(f => f.totalVictories > 0);
 
@@ -68,6 +82,8 @@ export default function Dashboard({ onVerFaccoes, onSelecionarFaccao }) {
     return (
         <div className="dashboard-container">
             <h1>📊 Dashboard</h1>
+
+            {onMudarPeriodo && <SeletorPeriodo periodo={periodo} onMudar={onMudarPeriodo} />}
 
             {onVerFaccoes && (
                 <div className="atalhos-dashboard">
@@ -185,9 +201,11 @@ export default function Dashboard({ onVerFaccoes, onSelecionarFaccao }) {
                         </section>
                     )}
 
-                    {jogadores.length === 0 && (
+                    {!erro && jogadores.length === 0 && (
                         <div className="mensagem-vazia">
-                            Nenhum jogador encontrado. Registre uma partida para ver estatísticas! 🎮
+                            {temFiltro(periodo)
+                                ? `Nenhuma partida no período (${descreverPeriodo(periodo)}). Escolha outro período. 📅`
+                                : 'Nenhum jogador encontrado. Registre uma partida para ver estatísticas! 🎮'}
                         </div>
                     )}
                 </>

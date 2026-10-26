@@ -317,6 +317,62 @@ describe('API Service', () => {
     });
   });
 
+  describe('dashboard period', () => {
+    const urlChamada = () => new URL(globalThis.fetch.mock.calls[0][0], 'http://base');
+
+    beforeEach(() => {
+      globalThis.fetch.mockResolvedValue({ ok: true, json: async () => [] });
+    });
+
+    it('given no period when calling the dashboards then sends no from or to', async () => {
+      await apiService.obterRanking();
+      expect(urlChamada().search).toBe('');
+    });
+
+    it('given "tudo" when calling the dashboards then sends no from or to', async () => {
+      await apiService.listarFaccoes('tudo');
+      expect(urlChamada().search).toBe('');
+    });
+
+    it('given a shortcut when calling the dashboards then sends only from, as an ISO instant', async () => {
+      await apiService.obterRanking('ano');
+
+      const params = urlChamada().searchParams;
+      expect(params.get('from')).toBe(new Date(new Date().getFullYear(), 0, 1).toISOString());
+      expect(params.has('to')).toBe(false);
+    });
+
+    it.each([
+      ['obterRanking', () => apiService.obterRanking('2026-01-10_2026-03-31'), '/dashboard/ranking'],
+      ['obterRankingJogador', () => apiService.obterRankingJogador(7, '2026-01-10_2026-03-31'), '/dashboard/ranking/7'],
+      ['listarFaccoes', () => apiService.listarFaccoes('2026-01-10_2026-03-31'), '/dashboard/factions'],
+      ['obterFaccao', () => apiService.obterFaccao('Aliança da Floresta', '2026-01-10_2026-03-31'), '/dashboard/factions/Alian%C3%A7a%20da%20Floresta']
+    ])('given a custom range when calling %s then sends from and to [from, to) in the path query', async (_, chamar, caminho) => {
+      await chamar();
+
+      const url = urlChamada();
+      expect(url.pathname).toBe(caminho);
+      expect(url.searchParams.get('from')).toBe(new Date(2026, 0, 10).toISOString());
+      expect(url.searchParams.get('to')).toBe(new Date(2026, 3, 1).toISOString());
+    });
+
+    it('given a 404 when getting a faction then the error carries the status', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockReset();
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 404 });
+
+      await expect(apiService.obterFaccao('Marqueses', '3m')).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('given a 400 for an inverted range when getting the ranking then throws with the status', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockReset();
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 400 });
+
+      await expect(apiService.obterRanking('3m')).rejects.toThrow('Erro 400 ao obter ranking');
+    });
+  });
+
   describe('listarJogadores', () => {
     it('given registered players when listing players then sends a GET to /api/players and returns them', async () => {
       const jogadores = [{ id: 1, name: 'Ana' }, { id: 2, name: 'Bruno' }];

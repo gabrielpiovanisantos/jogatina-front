@@ -36,7 +36,7 @@ describe('App faction navigation', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Aliança da Floresta' }));
     expect(await screen.findByText(/Desempenho por jogador/i)).toBeInTheDocument();
-    expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Aliança da Floresta');
+    expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Aliança da Floresta', 'tudo');
     expect(window.location.hash).toBe('#faccao/Alian%C3%A7a%20da%20Floresta');
   });
 
@@ -61,7 +61,7 @@ describe('App faction navigation', () => {
     render(<App />);
 
     expect(await screen.findByText(/Desempenho por jogador/i)).toBeInTheDocument();
-    expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Aliança da Floresta');
+    expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Aliança da Floresta', 'tudo');
   });
 
   it('given a malformed faction in the url when loading then falls back to the first screen', () => {
@@ -69,6 +69,57 @@ describe('App faction navigation', () => {
     render(<App />);
 
     expect(apiService.default.obterFaccao).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe('#criar');
+  });
+
+  it('given a period in the url when loading the faction list then uses it and keeps it in the url', async () => {
+    window.history.replaceState(null, '', '#faccoes?periodo=3m');
+    render(<App />);
+
+    await screen.findByRole('button', { name: 'Aliança da Floresta' });
+    expect(apiService.default.listarFaccoes).toHaveBeenCalledWith('3m');
+    expect(window.location.hash).toBe('#faccoes?periodo=3m');
+  });
+
+  it('given a period and a faction in the url when loading then opens the detail for that period', async () => {
+    window.history.replaceState(null, '', '#faccao/Alian%C3%A7a%20da%20Floresta?periodo=2026-01-01_2026-03-31');
+    render(<App />);
+
+    expect(await screen.findByText(/Desempenho por jogador/i)).toBeInTheDocument();
+    expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Aliança da Floresta', '2026-01-01_2026-03-31');
+    expect(window.location.hash).toBe('#faccao/Alian%C3%A7a%20da%20Floresta?periodo=2026-01-01_2026-03-31');
+  });
+
+  it('given a period chosen on the dashboard when going to the factions then keeps the same period', async () => {
+    window.history.replaceState(null, '', '#dashboard');
+    render(<App />);
+
+    await userEvent.selectOptions(await screen.findByLabelText('Período:'), 'Este ano');
+    expect(window.location.hash).toBe('#dashboard?periodo=ano');
+
+    await userEvent.click(screen.getByRole('button', { name: /desempenho das facções/i }));
+
+    await screen.findByRole('button', { name: 'Aliança da Floresta' });
+    expect(apiService.default.listarFaccoes).toHaveBeenLastCalledWith('ano');
+    expect(window.location.hash).toBe('#faccoes?periodo=ano');
+    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('Este ano');
+  });
+
+  it('given an invalid period in the url when loading then falls back to the whole history', async () => {
+    window.history.replaceState(null, '', '#faccoes?periodo=2026-05-01_2026-01-01');
+    render(<App />);
+
+    await screen.findByRole('button', { name: 'Aliança da Floresta' });
+    expect(apiService.default.listarFaccoes).toHaveBeenCalledWith('tudo');
+    expect(window.location.hash).toBe('#faccoes');
+  });
+
+  it('given a period when leaving the dashboards then drops it from the url', async () => {
+    window.history.replaceState(null, '', '#dashboard?periodo=12m');
+    render(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Criar Mesa/i }));
+
     expect(window.location.hash).toBe('#criar');
   });
 });

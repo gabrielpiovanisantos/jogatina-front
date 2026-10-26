@@ -113,6 +113,15 @@ export const faccoesDoJogadorMock = (jogador) => {
   );
 };
 
+// Os dados do mock representam partidas de nov/2025 a out/2026, como o banco
+// de dev. Um período que não cruza essa janela fica sem resultados, o que
+// permite ver o estado vazio dos dashboards no modo mock.
+const INICIO_DADOS_MOCK = new Date(2025, 10, 1);
+const FIM_DADOS_MOCK = new Date(2026, 10, 1);
+
+export const mockTemDadosNoPeriodo = ({ from, to }) =>
+  (!from || from < FIM_DADOS_MOCK) && (!to || to > INICIO_DADOS_MOCK);
+
 /**
  * Simula o algoritmo de organização de mesas do backend,
  * distribuindo os jogadores confirmados em grupos.
