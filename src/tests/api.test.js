@@ -208,6 +208,22 @@ describe('API Service', () => {
       expect(callArgs2[0]).toEqual(expect.stringContaining('/dashboard/ranking/1'));
     });
 
+    it('given a player with factions when getting a player ranking then returns them in the backend order', async () => {
+      const ranking = {
+        playerId: 1, playerName: 'Ana', totalVictories: 2, totalGames: 3, winPercentage: 66.66666666666666, differentFactions: 2, totalScore: 75,
+        factions: [
+          { faction: 'Malandro', totalGames: 1, totalVictories: 0, winPercentage: 0.0, totalScore: 20, averageScore: 20.0 },
+          { faction: 'Marqueses', totalGames: 2, totalVictories: 2, winPercentage: 100.0, totalScore: 55, averageScore: 27.5 }
+        ]
+      };
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => ranking });
+
+      const resultado = await apiService.obterRankingJogador(1);
+
+      // A ordem é responsabilidade do backend: a função não reordena
+      expect(resultado.factions.map(f => f.faction)).toEqual(['Malandro', 'Marqueses']);
+    });
+
     it('given an unknown player when the backend responds 404 then throws', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 404 });

@@ -69,6 +69,35 @@ export const desempenhoFaccaoMock = (faction) => {
   return { ...resumo, players };
 };
 
+// Facções de um jogador, no formato do campo "factions" de
+// GET /dashboard/ranking/{playerId}. Distribui as partidas e vitórias do
+// jogador entre differentFactions facções e ordena como o backend:
+// winPercentage, totalVictories e totalGames decrescentes, depois o nome.
+export const faccoesDoJogadorMock = (jogador) => {
+  const quantidade = Math.max(1, jogador.differentFactions);
+  const inicio = jogador.playerId % MOCK_FACCOES.length;
+  const faccoes = Array.from({ length: quantidade }, (_, i) => {
+    const faction = MOCK_FACCOES[(inicio + i) % MOCK_FACCOES.length].faction;
+    const totalGames = Math.floor(jogador.totalGames / quantidade) + (i < jogador.totalGames % quantidade ? 1 : 0);
+    const totalVictories = Math.min(totalGames, Math.floor(jogador.totalVictories / quantidade) + (i < jogador.totalVictories % quantidade ? 1 : 0));
+    const totalScore = totalGames * (20 - i);
+    return {
+      faction,
+      totalGames,
+      totalVictories,
+      winPercentage: totalGames ? (totalVictories / totalGames) * 100 : 0,
+      totalScore,
+      averageScore: totalGames ? totalScore / totalGames : 0
+    };
+  });
+  return faccoes.sort((a, b) =>
+    b.winPercentage - a.winPercentage
+    || b.totalVictories - a.totalVictories
+    || b.totalGames - a.totalGames
+    || a.faction.localeCompare(b.faction)
+  );
+};
+
 /**
  * Simula o algoritmo de organização de mesas do backend,
  * distribuindo os jogadores confirmados em grupos.

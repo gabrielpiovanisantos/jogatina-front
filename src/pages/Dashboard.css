@@ -106,6 +106,27 @@
     text-align: center;
 }
 
+.faccoes-jogador {
+    margin-top: 30px;
+}
+
+.faccoes-jogador h2 {
+    color: #e8f5e9;
+    font-size: 1.4rem;
+    margin: 0 0 15px;
+}
+
+.resumo-vitorias {
+    color: #f0a35e;
+    font-weight: 600;
+    margin: 0 0 15px;
+}
+
+/* Linha de facção com pelo menos uma vitória do jogador */
+.faccao-vencedora td {
+    background-color: #fff6e5;
+}
+
 .mensagem-vazia {
     text-align: center;
     padding: 40px;

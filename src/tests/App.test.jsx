@@ -7,6 +7,7 @@ import * as apiService from '../services/api.js';
 vi.mock('../services/api.js', () => ({
   default: {
     obterRanking: vi.fn(),
+    obterRankingJogador: vi.fn(),
     listarFaccoes: vi.fn(),
     obterFaccao: vi.fn()
   }
@@ -21,6 +22,7 @@ describe('App faction navigation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     apiService.default.obterRanking.mockResolvedValue([]);
+    apiService.default.obterRankingJogador.mockResolvedValue({ factions: [] });
     apiService.default.listarFaccoes.mockResolvedValue([DETALHE]);
     apiService.default.obterFaccao.mockResolvedValue(DETALHE);
   });
@@ -35,6 +37,22 @@ describe('App faction navigation', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Aliança da Floresta' }));
     expect(await screen.findByText(/Desempenho por jogador/i)).toBeInTheDocument();
     expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Aliança da Floresta');
+    expect(window.location.hash).toBe('#faccao/Alian%C3%A7a%20da%20Floresta');
+  });
+
+  it('given a player faction on the dashboard when clicking it then opens the faction detail', async () => {
+    apiService.default.obterRanking.mockResolvedValue([
+      { playerId: 1, playerName: 'Ana', totalGames: 4, differentFactions: 1, totalVictories: 3, totalScore: 120 }
+    ]);
+    apiService.default.obterRankingJogador.mockResolvedValue({
+      playerId: 1, factions: [{ faction: 'Aliança da Floresta', totalGames: 4, totalVictories: 3, winPercentage: 75.0, totalScore: 120, averageScore: 30.0 }]
+    });
+    window.history.replaceState(null, '', '#dashboard');
+    render(<App />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Aliança da Floresta' }));
+
+    expect(await screen.findByText(/Desempenho por jogador/i)).toBeInTheDocument();
     expect(window.location.hash).toBe('#faccao/Alian%C3%A7a%20da%20Floresta');
   });
 

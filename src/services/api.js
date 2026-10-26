@@ -1,5 +1,5 @@
 // Serviço centralizado para chamadas à API
-import { MOCK_PLAYERS, MOCK_RANKING, MOCK_FACCOES, desempenhoFaccaoMock, gerarMesasMock } from './mockData.js';
+import { MOCK_PLAYERS, MOCK_RANKING, MOCK_FACCOES, desempenhoFaccaoMock, faccoesDoJogadorMock, gerarMesasMock } from './mockData.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?
   (import.meta.env.VITE_API_URL === '/' ? '' : import.meta.env.VITE_API_URL) :
@@ -108,7 +108,7 @@ export const apiService = {
   /**
    * Obtém o ranking de um jogador específico
    * @param {Number|String} playerId - ID do jogador
-   * @returns {Promise} Dados de ranking do jogador
+   * @returns {Promise} Dados de ranking do jogador, com factions: [{ faction, totalGames, totalVictories, winPercentage, totalScore, averageScore }] já ordenadas pelo backend
    */
   obterRankingJogador: async (playerId) => {
     if (USE_MOCK_DATA) {
@@ -118,7 +118,7 @@ export const apiService = {
       if (!jogador) {
         throw new Error(`Jogador ${playerId} não encontrado`);
       }
-      return { ...jogador };
+      return { ...jogador, factions: faccoesDoJogadorMock(jogador) };
     }
 
     try {

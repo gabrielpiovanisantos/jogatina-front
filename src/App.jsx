@@ -89,7 +89,7 @@ function App() {
             case 'faccao':
                 return <FaccaoDetalhe faccao={faccaoSelecionada} onVoltar={irParaFaccoes} />;
             default:
-                return <Dashboard onVerFaccoes={irParaFaccoes} />;
+                return <Dashboard onVerFaccoes={irParaFaccoes} onSelecionarFaccao={irParaFaccao} />;
         }
     };
 
