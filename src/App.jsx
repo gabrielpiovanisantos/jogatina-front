@@ -137,8 +137,7 @@ function App() {
         excluirPeriodo: async (id) => {
             await apiService.excluirPeriodoSalvo(id);
             await recarregarSalvos();
-        },
-        abrirTemporadas: () => setTela('temporadas')
+        }
     }), [salvos, erroSalvos, recarregarSalvos]);
 
     const irParaSetup = (dados) => {

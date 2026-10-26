@@ -1,20 +1,24 @@
 import { useContext, useState } from 'react';
 import {
-    ATALHOS_PERIODO, diasDoPeriodo, periodoPersonalizado, periodoSalvo, periodoSalvoDe,
-    temFiltro, datasDoPeriodo
+    ATALHOS_PERIODO, PERIODO_PADRAO, diasDoPeriodo, periodoPersonalizado, periodoSalvo, periodoSalvoDe,
+    ehPeriodoSalvo, temFiltro, datasDoPeriodo
 } from '../utils/periodo.js';
 import { paraAAAAMMDD } from '../utils/datas.js';
 import { PeriodosContexto } from '../utils/periodosContexto.js';
 import './SeletorPeriodo.css';
 
 const PERSONALIZADO = 'personalizado';
+// Valor vazio dos dois selects: o período fica neutro quando vale uma temporada,
+// e a temporada fica vazia quando vale um período
+const NENHUM = '';
 
-// Seletor de período compartilhado pelos dashboards e pelo Ranking. Só avisa o
-// pai quando o período está completo: um atalho, uma temporada (período salvo)
-// ou as duas datas do personalizado em ordem. As temporadas são criadas e
-// editadas na tela Temporadas.
+// Filtro compartilhado pelos dashboards e pelo Ranking, em dois selects que
+// definem o mesmo período: "Período" (atalhos e Personalizado) e "Temporada"
+// (os períodos salvos, criados na tela Temporadas). Escolher um anula o outro.
+// Só avisa o pai quando a escolha está completa: um atalho, uma temporada ou
+// as duas datas do personalizado em ordem.
 export default function SeletorPeriodo({ periodo, onMudar }) {
-    const { salvos, erro, abrirTemporadas } = useContext(PeriodosContexto);
+    const { salvos, erro } = useContext(PeriodosContexto);
     const diasAtuais = diasDoPeriodo(periodo);
     const [escolheuPersonalizado, setEscolheuPersonalizado] = useState(false);
     const [de, setDe] = useState(diasAtuais?.de ?? '');
@@ -23,8 +27,17 @@ export default function SeletorPeriodo({ periodo, onMudar }) {
     const datasInvertidas = de && ate && de > ate;
 
 
-    const modoPersonalizado = escolheuPersonalizado || diasAtuais !== null;
-    const valorSelecionado = modoPersonalizado ? PERSONALIZADO : periodo;
+    const temporadaAtiva = ehPeriodoSalvo(periodo);
+    const modoPersonalizado = !temporadaAtiva && (escolheuPersonalizado || diasAtuais !== null);
+    const valorPeriodo = temporadaAtiva ? NENHUM : (modoPersonalizado ? PERSONALIZADO : periodo);
+    const valorTemporada = temporadaAtiva ? periodo : NENHUM;
+    const semTemporadas = salvos.length === 0;
+
+    const mudarTemporada = (valor) => {
+        setEscolheuPersonalizado(false);
+        // Limpar a temporada volta ao padrão
+        onMudar(valor === NENHUM ? PERIODO_PADRAO : valor);
+    };
 
     const mudarEscolha = (valor) => {
         if (valor !== PERSONALIZADO) {
@@ -52,26 +65,40 @@ export default function SeletorPeriodo({ periodo, onMudar }) {
     return (
         <div className="seletor-periodo">
             <div className="linha-seletor">
-                <label htmlFor="seletor-periodo">Período:</label>
-                <select id="seletor-periodo" value={valorSelecionado} onChange={(e) => mudarEscolha(e.target.value)}>
-                    {ATALHOS_PERIODO.map(a => (
-                        <option key={a.id} value={a.id}>{a.rotulo}</option>
-                    ))}
-                    {salvos.length > 0 && (
-                        <optgroup label="Temporadas">
-                            {salvos.map(p => (
-                                <option key={p.id} value={periodoSalvo(p.id)}>{p.name}</option>
-                            ))}
-                        </optgroup>
-                    )}
-                    <option value={PERSONALIZADO}>Personalizado</option>
-                </select>
+                <div className="campo-seletor">
+                    <label htmlFor="seletor-periodo">Período:</label>
+                    <select id="seletor-periodo" value={valorPeriodo} onChange={(e) => mudarEscolha(e.target.value)}>
+                        {/* Aparece só quando vale uma temporada; não dá para escolher */}
+                        <option value={NENHUM} disabled>—</option>
+                        {ATALHOS_PERIODO.map(a => (
+                            <option key={a.id} value={a.id}>{a.rotulo}</option>
+                        ))}
+                        <option value={PERSONALIZADO}>Personalizado</option>
+                    </select>
+                </div>
 
-                {abrirTemporadas && (
-                    <button type="button" className="botao-gerenciar" onClick={abrirTemporadas}>
-                        🗓️ Gerenciar temporadas
-                    </button>
-                )}
+                <div className="campo-seletor">
+                    <label htmlFor="seletor-temporada">Temporada:</label>
+                    <select
+                        id="seletor-temporada"
+                        value={valorTemporada}
+                        disabled={semTemporadas}
+                        aria-describedby={erro ? 'erro-temporadas' : undefined}
+                        onChange={(e) => mudarTemporada(e.target.value)}
+                    >
+                        {semTemporadas ? (
+                            <option value={NENHUM}>Nenhuma temporada</option>
+                        ) : (
+                            <>
+                                <option value={NENHUM}>—</option>
+                                {salvos.map(p => (
+                                    <option key={p.id} value={periodoSalvo(p.id)}>{p.name}</option>
+                                ))}
+                            </>
+                        )}
+                    </select>
+                    {erro && <div id="erro-temporadas" className="aviso-periodo">⚠️ {erro}</div>}
+                </div>
             </div>
 
             {modoPersonalizado && (
@@ -106,8 +133,6 @@ export default function SeletorPeriodo({ periodo, onMudar }) {
                     {modoPersonalizado ? datasDoPeriodo(periodo) : `${nomeEscolhido}: ${datasDoPeriodo(periodo)}`}
                 </p>
             )}
-
-            {erro && <div className="aviso-periodo">⚠️ {erro}</div>}
         </div>
     );
 }

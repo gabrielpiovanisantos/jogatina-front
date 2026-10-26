@@ -434,7 +434,8 @@ describe('App temporadas', () => {
 
     await screen.findByRole('button', { name: 'Ana' });
     expect(apiService.default.obterRanking).toHaveBeenCalledWith('salvo:1');
-    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('Temporada 1');
+    expect(screen.getByLabelText('Temporada:')).toHaveDisplayValue('Temporada 1');
+    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('—');
     expect(window.location.hash).toBe('#ranking?periodo=salvo:1');
   });
 
@@ -493,8 +494,23 @@ describe('App temporadas', () => {
     await screen.findByRole('button', { name: 'Ana' });
     expect(window.location.hash).toBe('#ranking?periodo=salvo:3');
     expect(apiService.default.obterRanking).toHaveBeenLastCalledWith('salvo:3');
-    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('Temporada 3');
+    expect(screen.getByLabelText('Temporada:')).toHaveDisplayValue('Temporada 3');
     expect(apiService.default.atualizarPeriodoSalvo).toHaveBeenCalledWith(2, { name: 'Temporada 2', from: SALVOS[0].from, to: NOVA.from });
+  });
+
+  it('given the ranking when choosing a season and then a period then each choice replaces the other in the url', async () => {
+    window.history.replaceState(null, '', '#ranking?periodo=3m');
+    render(<App />);
+    await screen.findByRole('button', { name: 'Ana' });
+
+    await userEvent.selectOptions(await screen.findByLabelText('Temporada:'), 'Temporada 2');
+    await waitFor(() => expect(window.location.hash).toBe('#ranking?periodo=salvo:2'));
+    await waitFor(() => expect(apiService.default.obterRanking).toHaveBeenLastCalledWith('salvo:2'));
+    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('—');
+
+    await userEvent.selectOptions(screen.getByLabelText('Período:'), 'Este ano');
+    await waitFor(() => expect(window.location.hash).toBe('#ranking?periodo=ano'));
+    expect(screen.getByLabelText('Temporada:')).toHaveDisplayValue('—');
   });
 
   it('given the selected season is deleted when back on a dashboard then falls back to Tudo', async () => {
@@ -526,7 +542,7 @@ describe('App temporadas', () => {
     await screen.findByRole('button', { name: 'Ana' });
     const chamadasAntes = apiService.default.obterRanking.mock.calls.length;
 
-    await userEvent.click(screen.getByRole('button', { name: /Gerenciar temporadas/ }));
+    await userEvent.click(screen.getByRole('button', { name: '🗓️ Nova Temporada' }));
     expect(window.location.hash).toBe('#temporadas');
 
     apiService.default.atualizarPeriodoSalvo.mockResolvedValueOnce({ ...SALVOS[1], to: new Date(2026, 4, 1).toISOString() });
