@@ -28,11 +28,15 @@ const TELAS_COM_PERIODO = ['jogadores', 'faccoes', 'faccao'];
 // Parte do hash antes do "?"
 const rotaDaUrl = () => window.location.hash.slice(1).split('?')[0];
 
+const parametroDaUrl = (nome) => new URLSearchParams(window.location.hash.split('?')[1] ?? '').get(nome);
+
 const periodoDaUrl = () => {
-    const consulta = window.location.hash.split('?')[1] ?? '';
-    const periodo = new URLSearchParams(consulta).get('periodo');
+    const periodo = parametroDaUrl('periodo');
     return periodo && periodoValido(periodo) ? periodo : PERIODO_PADRAO;
 };
+
+// O Ranking abre em jogadores; #ranking?tipo=faccoes abre o de facções
+const tipoRankingDaUrl = () => (parametroDaUrl('tipo') === 'faccoes' ? 'faccoes' : 'jogadores');
 
 const faccaoDaUrl = () => {
     const hash = rotaDaUrl();
@@ -55,16 +59,18 @@ function App() {
     const [dadosMesa, setDadosMesa] = useState(null);
     const [faccaoSelecionada, setFaccaoSelecionada] = useState(faccaoDaUrl);
     const [periodo, setPeriodo] = useState(periodoDaUrl);
+    const [tipoRanking, setTipoRanking] = useState(tipoRankingDaUrl);
 
     useEffect(() => {
         const rota = tela === 'faccao'
             ? `${PREFIXO_FACCAO}${encodeURIComponent(faccaoSelecionada)}`
             : tela;
-        const consulta = TELAS_COM_PERIODO.includes(tela) && periodo !== PERIODO_PADRAO
-            ? `?${new URLSearchParams({ periodo })}`
-            : '';
-        window.history.replaceState(null, '', `#${rota}${consulta}`);
-    }, [tela, faccaoSelecionada, periodo]);
+        const params = new URLSearchParams();
+        if (TELAS_COM_PERIODO.includes(tela) && periodo !== PERIODO_PADRAO) params.set('periodo', periodo);
+        if (tela === 'ranking' && tipoRanking !== 'jogadores') params.set('tipo', tipoRanking);
+        const consulta = params.toString();
+        window.history.replaceState(null, '', `#${rota}${consulta ? `?${consulta}` : ''}`);
+    }, [tela, faccaoSelecionada, periodo, tipoRanking]);
 
     const irParaSetup = (dados) => {
         setDadosMesa(dados);
@@ -105,7 +111,7 @@ function App() {
             case 'partida':
                 return <RegistrarPartida />;
             case 'ranking':
-                return <Ranking />;
+                return <Ranking tipo={tipoRanking} onMudarTipo={setTipoRanking} onSelecionarFaccao={irParaFaccao} />;
             case 'faccoes':
                 return <Faccoes onSelecionarFaccao={irParaFaccao} periodo={periodo} onMudarPeriodo={setPeriodo} />;
             case 'faccao':

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import apiService from '../services/api.js';
-import { formatarPorcentagem, formatarMedia } from '../utils/faccoes.js';
 import { PERIODO_PADRAO, temFiltro, descreverPeriodo } from '../utils/periodo.js';
 import SeletorPeriodo from '../components/SeletorPeriodo.jsx';
+import TabelaFaccoes from '../components/TabelaFaccoes.jsx';
 import './Faccoes.css';
 
 // Dashboard de facções: ranking de todas as facções; cada uma abre o seu detalhe.
@@ -50,47 +50,7 @@ export default function Faccoes({ onSelecionarFaccao, periodo = PERIODO_PADRAO, 
                     {erro && <div className="erro-mensagem">⚠️ {erro}</div>}
 
                     {faccoes.length > 0 && (
-                        <div className="tabela-faccoes">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Posição</th>
-                                        <th>Facção</th>
-                                        <th>Partidas</th>
-                                        <th>Vitórias</th>
-                                        <th>% Vitórias</th>
-                                        <th>Média de pontos</th>
-                                        <th>Jogadores</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {faccoes.map((faccao, index) => (
-                                        <tr key={faccao.faction}>
-                                            <td className="posicao">
-                                                {index === 0 && '🥇'}
-                                                {index === 1 && '🥈'}
-                                                {index === 2 && '🥉'}
-                                                {index > 2 && `#${index + 1}`}
-                                            </td>
-                                            <td className="nome">
-                                                <button
-                                                    type="button"
-                                                    className="link-faccao"
-                                                    onClick={() => onSelecionarFaccao(faccao.faction)}
-                                                >
-                                                    {faccao.faction}
-                                                </button>
-                                            </td>
-                                            <td className="numero">{faccao.totalGames}</td>
-                                            <td className="numero">{faccao.totalVictories}</td>
-                                            <td className="numero">{formatarPorcentagem(faccao.winPercentage)}</td>
-                                            <td className="numero">{formatarMedia(faccao.averageScore)}</td>
-                                            <td className="numero">{faccao.distinctPlayers}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <TabelaFaccoes faccoes={faccoes} onSelecionarFaccao={onSelecionarFaccao} />
                     )}
 
                     {!erro && faccoes.length === 0 && (

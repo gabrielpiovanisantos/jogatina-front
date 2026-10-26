@@ -91,6 +91,36 @@ td {
     min-width: 100px;
 }
 
+/* Seletor "Jogadores | Facções" no topo do Ranking */
+.seletor-tipo-ranking {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.seletor-tipo-ranking button {
+    padding: 10px 20px;
+    border: 2px solid #4a7c59;
+    background-color: transparent;
+    color: #c8e6c9;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.seletor-tipo-ranking button:first-child {
+    border-radius: 5px 0 0 5px;
+}
+
+.seletor-tipo-ranking button:last-child {
+    border-radius: 0 5px 5px 0;
+}
+
+.seletor-tipo-ranking button.ativo {
+    background-color: #4a7c59;
+    color: #ffffff;
+}
+
 .mensagem-vazia {
     text-align: center;
     padding: 40px;

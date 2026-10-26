@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App.jsx';
 import * as apiService from '../services/api.js';
@@ -184,5 +184,89 @@ describe('App dashboards tabs', () => {
 
     expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('👤 Dashboard de Jogadores');
     expect(window.location.hash).toBe(nova);
+  });
+});
+
+describe('App ranking tab', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    apiService.default.obterRanking.mockResolvedValue([
+      { playerId: 1, playerName: 'Ana', totalScore: 75, totalGames: 3, totalVictories: 2, differentFactions: 2 }
+    ]);
+    apiService.default.obterRankingJogador.mockResolvedValue({ factions: [] });
+    apiService.default.listarFaccoes.mockResolvedValue([DETALHE]);
+    apiService.default.obterFaccao.mockResolvedValue(DETALHE);
+  });
+
+  it('given the Ranking button when clicking it then opens the players ranking by default', async () => {
+    window.history.replaceState(null, '', '#criar');
+    render(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: /🏆 Ranking/ }));
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(window.location.hash).toBe('#ranking');
+    expect(apiService.default.listarFaccoes).not.toHaveBeenCalled();
+  });
+
+  it('given the ranking when switching to factions then keeps the choice in the url', async () => {
+    window.history.replaceState(null, '', '#ranking');
+    render(<App />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Facções', pressed: false }));
+
+    expect(await screen.findByRole('button', { name: 'Aliança da Floresta' })).toBeInTheDocument();
+    expect(window.location.hash).toBe('#ranking?tipo=faccoes');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Jogadores', pressed: false }));
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(window.location.hash).toBe('#ranking');
+  });
+
+  it('given the ranking selector when rendering then its buttons are not confused with the navbar tabs', async () => {
+    window.history.replaceState(null, '', '#ranking');
+    render(<App />);
+
+    const grupo = await screen.findByRole('group', { name: 'Tipo de ranking' });
+    expect(screen.getAllByRole('button', { name: 'Facções' })).toEqual([within(grupo).getByRole('button', { name: 'Facções' })]);
+    expect(screen.getAllByRole('button', { name: '🛡️ Facções' })).toHaveLength(1); // só a aba da navbar
+  });
+
+  it('given the factions ranking in the url when loading then opens it', async () => {
+    window.history.replaceState(null, '', '#ranking?tipo=faccoes');
+    render(<App />);
+
+    expect(await screen.findByRole('button', { name: 'Aliança da Floresta' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Facções', pressed: true })).toBeInTheDocument();
+    // A aba da navbar continua sendo o Ranking
+    expect(screen.getByRole('button', { name: /🏆 Ranking/ })).toHaveClass('active');
+  });
+
+  it.each(['#ranking?tipo=lixo', '#ranking?tipo='])('given an invalid type %s in the url when loading then opens the players ranking', async (hash) => {
+    window.history.replaceState(null, '', hash);
+    render(<App />);
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(window.location.hash).toBe('#ranking');
+  });
+
+  it('given the factions ranking when clicking a faction then opens its detail', async () => {
+    window.history.replaceState(null, '', '#ranking?tipo=faccoes');
+    render(<App />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Aliança da Floresta' }));
+
+    expect(await screen.findByText(/Desempenho por jogador/i)).toBeInTheDocument();
+    expect(window.location.hash).toBe('#faccao/Alian%C3%A7a%20da%20Floresta');
+  });
+
+  it('given the factions ranking when leaving the tab then drops the type from the url', async () => {
+    window.history.replaceState(null, '', '#ranking?tipo=faccoes');
+    render(<App />);
+    await screen.findByRole('button', { name: 'Aliança da Floresta' });
+
+    await userEvent.click(screen.getByRole('button', { name: /Criar Mesa/i }));
+
+    expect(window.location.hash).toBe('#criar');
   });
 });
