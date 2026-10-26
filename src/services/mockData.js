@@ -31,14 +31,16 @@ export const MOCK_RANKING = [
 // Mesmo formato de GET /dashboard/factions, já ordenado como o backend faria:
 // winPercentage, totalVictories e totalGames decrescentes, depois o nome.
 export const MOCK_FACCOES = [
-  { faction: 'Marquise de Cat', totalGames: 18, totalVictories: 6, winPercentage: 33.3, totalScore: 432, averageScore: 24.0, distinctPlayers: 6 },
-  { faction: 'Woodland Alliance', totalGames: 12, totalVictories: 4, winPercentage: 33.3, totalScore: 276, averageScore: 23.0, distinctPlayers: 5 },
-  { faction: 'Eyrie Dynasties', totalGames: 16, totalVictories: 5, winPercentage: 31.3, totalScore: 352, averageScore: 22.0, distinctPlayers: 6 },
-  { faction: 'Vagabond', totalGames: 14, totalVictories: 4, winPercentage: 28.6, totalScore: 294, averageScore: 21.0, distinctPlayers: 5 },
-  { faction: 'Riverfolk Company', totalGames: 8, totalVictories: 2, winPercentage: 25.0, totalScore: 164, averageScore: 20.5, distinctPlayers: 4 },
-  { faction: 'Lizard Cult', totalGames: 6, totalVictories: 1, winPercentage: 16.7, totalScore: 117, averageScore: 19.5, distinctPlayers: 3 },
-  { faction: 'Underground Duchy', totalGames: 7, totalVictories: 1, winPercentage: 14.3, totalScore: 133, averageScore: 19.0, distinctPlayers: 4 },
-  { faction: 'Corvid Conspiracy', totalGames: 5, totalVictories: 0, winPercentage: 0.0, totalScore: 85, averageScore: 17.0, distinctPlayers: 3 }
+  { faction: 'Marqueses', totalGames: 18, totalVictories: 6, winPercentage: 33.3, totalScore: 432, averageScore: 24.0, distinctPlayers: 6 },
+  { faction: 'Aliança da Floresta', totalGames: 12, totalVictories: 4, winPercentage: 33.3, totalScore: 276, averageScore: 23.0, distinctPlayers: 5 },
+  { faction: 'Dinastia das Rapinas', totalGames: 16, totalVictories: 5, winPercentage: 31.3, totalScore: 352, averageScore: 22.0, distinctPlayers: 6 },
+  { faction: 'Malandro', totalGames: 14, totalVictories: 4, winPercentage: 28.6, totalScore: 294, averageScore: 21.0, distinctPlayers: 5 },
+  { faction: 'Companhia Ribeirinha', totalGames: 8, totalVictories: 2, winPercentage: 25.0, totalScore: 164, averageScore: 20.5, distinctPlayers: 4 },
+  { faction: 'Guardiões de Ferro', totalGames: 4, totalVictories: 1, winPercentage: 25.0, totalScore: 80, averageScore: 20.0, distinctPlayers: 3 },
+  { faction: 'Senhor das Centenas', totalGames: 5, totalVictories: 1, winPercentage: 20.0, totalScore: 98, averageScore: 19.6, distinctPlayers: 3 },
+  { faction: 'Lagartos Cultistas', totalGames: 6, totalVictories: 1, winPercentage: 16.7, totalScore: 117, averageScore: 19.5, distinctPlayers: 3 },
+  { faction: 'Ducado Subterrâneo', totalGames: 7, totalVictories: 1, winPercentage: 14.3, totalScore: 133, averageScore: 19.0, distinctPlayers: 4 },
+  { faction: 'Conspiração Corvídea', totalGames: 5, totalVictories: 0, winPercentage: 0.0, totalScore: 85, averageScore: 17.0, distinctPlayers: 3 }
 ];
 
 const arredondar = (n) => Math.round(n * 10) / 10;

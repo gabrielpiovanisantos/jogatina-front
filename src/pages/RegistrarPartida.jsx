@@ -3,15 +3,19 @@ import apiService from '../services/api.js';
 import './RegistrarPartida.css';
 import { paraAAAAMMDD, formatarDataBR, intervaloDoDia, dataComHoraAtual } from '../utils/datas.js';
 
+// Nomes do manual brasileiro "As Leis de Root". São gravados como estão no
+// backend, que agrupa as partidas por esse texto.
 const FACCOES_ROOT = [
-    'Marquise de Cat',
-    'Eyrie Dynasties',
-    'Woodland Alliance',
-    'Vagabond',
-    'Lizard Cult',
-    'Riverfolk Company',
-    'Underground Duchy',
-    'Corvid Conspiracy'
+    'Marqueses',
+    'Dinastia das Rapinas',
+    'Aliança da Floresta',
+    'Malandro',
+    'Lagartos Cultistas',
+    'Companhia Ribeirinha',
+    'Ducado Subterrâneo',
+    'Conspiração Corvídea',
+    'Senhor das Centenas',
+    'Guardiões de Ferro'
 ];
 
 export default function RegistrarPartida() {

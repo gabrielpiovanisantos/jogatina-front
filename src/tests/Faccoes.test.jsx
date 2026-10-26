@@ -12,7 +12,7 @@ vi.mock('../services/api.js', () => ({
 
 const FACCOES = [
   { faction: 'Stark', totalGames: 4, totalVictories: 3, winPercentage: 75.0, totalScore: 120, averageScore: 30.0, distinctPlayers: 2 },
-  { faction: 'Marquise de Cat', totalGames: 6, totalVictories: 2, winPercentage: 33.3, totalScore: 132, averageScore: 22.0, distinctPlayers: 3 }
+  { faction: 'Marqueses', totalGames: 6, totalVictories: 2, winPercentage: 33.3, totalScore: 132, averageScore: 22.0, distinctPlayers: 3 }
 ];
 
 describe('Faccoes component', () => {
@@ -48,7 +48,7 @@ describe('Faccoes component', () => {
 
     const segunda = within(linhas[1]);
     expect(segunda.getByText('🥈')).toBeInTheDocument();
-    expect(segunda.getByText('Marquise de Cat')).toBeInTheDocument();
+    expect(segunda.getByText('Marqueses')).toBeInTheDocument();
     expect(segunda.getByText('33,3%')).toBeInTheDocument();
     expect(segunda.getByText('22,0')).toBeInTheDocument();
   });
@@ -69,9 +69,9 @@ describe('Faccoes component', () => {
     const onSelecionarFaccao = vi.fn();
 
     render(<Faccoes onSelecionarFaccao={onSelecionarFaccao} onVoltar={vi.fn()} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Marquise de Cat' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Marqueses' }));
 
-    expect(onSelecionarFaccao).toHaveBeenCalledWith('Marquise de Cat');
+    expect(onSelecionarFaccao).toHaveBeenCalledWith('Marqueses');
   });
 
   it('given no factions when rendering then shows the empty message', async () => {

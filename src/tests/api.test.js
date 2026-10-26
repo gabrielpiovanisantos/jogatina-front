@@ -262,13 +262,13 @@ describe('API Service', () => {
       expect(resultado).toEqual(detalhe);
     });
 
-    it('given a faction name with spaces when getting it then encodes the name in the path', async () => {
+    it('given a faction name with spaces and accents when getting it then encodes the name in the path', async () => {
       globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
 
-      await apiService.obterFaccao('Marquise de Cat');
+      await apiService.obterFaccao('Aliança da Floresta');
 
       expect(globalThis.fetch.mock.calls[0][0]).toEqual(
-        expect.stringContaining('/dashboard/factions/Marquise%20de%20Cat')
+        expect.stringContaining('/dashboard/factions/Alian%C3%A7a%20da%20Floresta')
       );
     });
 
@@ -306,8 +306,8 @@ describe('API Service', () => {
     const payload = {
       dateTime: '2026-10-19T20:00:00.000Z',
       results: [
-        { playerId: 1, faction: 'Marquise de Cat', points: 30, won: true },
-        { playerId: 2, faction: 'Vagabond', points: 22, won: false }
+        { playerId: 1, faction: 'Marqueses', points: 30, won: true },
+        { playerId: 2, faction: 'Malandro', points: 22, won: false }
       ]
     };
 

@@ -42,6 +42,29 @@ describe('RegistrarPartida component', () => {
     expect(nomes).toEqual(['Selecione o Jogador', 'Ana', 'Bruno', 'Carla']);
   });
 
+  it('given the form when rendering then lists the factions with the Brazilian manual names in order', async () => {
+    apiService.listarJogadores.mockResolvedValue(JOGADORES);
+
+    render(<RegistrarPartida />);
+
+    await screen.findByLabelText('Jogador 1');
+    const select = screen.getByDisplayValue('Selecione a Facção');
+    const nomes = Array.from(select.options).map(o => o.textContent);
+    expect(nomes).toEqual([
+      'Selecione a Facção',
+      'Marqueses',
+      'Dinastia das Rapinas',
+      'Aliança da Floresta',
+      'Malandro',
+      'Lagartos Cultistas',
+      'Companhia Ribeirinha',
+      'Ducado Subterrâneo',
+      'Conspiração Corvídea',
+      'Senhor das Centenas',
+      'Guardiões de Ferro'
+    ]);
+  });
+
   it('given a selected player when saving the game then sends the real player id', async () => {
     const user = userEvent.setup();
     apiService.listarJogadores.mockResolvedValue(JOGADORES);
@@ -50,12 +73,12 @@ describe('RegistrarPartida component', () => {
     render(<RegistrarPartida />);
 
     await user.selectOptions(await screen.findByLabelText('Jogador 1'), 'Bruno');
-    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Vagabond');
+    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Malandro');
     await user.click(screen.getByRole('button', { name: /Salvar Partida/i }));
 
     await waitFor(() => expect(apiService.registrarPartida).toHaveBeenCalledTimes(1));
     expect(apiService.registrarPartida.mock.calls[0][0].results).toEqual([
-      { playerId: 22, faction: 'Vagabond', points: 0, won: false }
+      { playerId: 22, faction: 'Malandro', points: 0, won: false }
     ]);
   });
 
@@ -90,7 +113,7 @@ describe('RegistrarPartida component', () => {
     expect(apiService.listarPartidas).toHaveBeenLastCalledWith(new Date(2026, 9, 1), new Date(2026, 9, 2));
 
     await user.selectOptions(screen.getByLabelText('Jogador 1'), 'Ana');
-    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Vagabond');
+    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Malandro');
     await user.click(screen.getByRole('button', { name: /Salvar Partida/i }));
 
     await waitFor(() => expect(apiService.registrarPartida).toHaveBeenCalledTimes(1));
@@ -108,7 +131,7 @@ describe('RegistrarPartida component', () => {
 
     apiService.listarPartidas.mockResolvedValue([{ id: 1, dateTime: new Date().toISOString() }]);
     await user.selectOptions(screen.getByLabelText('Jogador 1'), 'Ana');
-    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Vagabond');
+    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Malandro');
     await user.click(screen.getByRole('button', { name: /Salvar Partida/i }));
 
     expect(await screen.findByRole('heading', { name: /^Partida 2 · / })).toBeInTheDocument();
@@ -138,7 +161,7 @@ describe('RegistrarPartida component', () => {
     render(<RegistrarPartida />);
 
     await user.selectOptions(await screen.findByLabelText('Jogador 1'), 'Ana');
-    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Vagabond');
+    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Malandro');
     await user.click(screen.getByRole('button', { name: /Salvar Partida/i }));
 
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith(`⚠️ Falha ao registrar partida: ${mensagem}`));

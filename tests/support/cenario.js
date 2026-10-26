@@ -10,26 +10,26 @@ export const CENARIO_RANKING = {
     {
       data: '2026-09-01T20:00:00Z',
       resultados: [
-        { jogador: 'Ana', faccao: 'Marquise de Cat', pontos: 30, venceu: true },
-        { jogador: 'Bruno', faccao: 'Eyrie Dynasties', pontos: 22, venceu: false },
-        { jogador: 'Carla', faccao: 'Woodland Alliance', pontos: 18, venceu: false }
+        { jogador: 'Ana', faccao: 'Marqueses', pontos: 30, venceu: true },
+        { jogador: 'Bruno', faccao: 'Dinastia das Rapinas', pontos: 22, venceu: false },
+        { jogador: 'Carla', faccao: 'Aliança da Floresta', pontos: 18, venceu: false }
       ]
     },
     {
       data: '2026-09-08T20:00:00Z',
       resultados: [
-        { jogador: 'Ana', faccao: 'Eyrie Dynasties', pontos: 25, venceu: false },
-        { jogador: 'Bruno', faccao: 'Vagabond', pontos: 30, venceu: true },
-        { jogador: 'Carla', faccao: 'Marquise de Cat', pontos: 20, venceu: false },
-        { jogador: 'Diego', faccao: 'Lizard Cult', pontos: 10, venceu: false }
+        { jogador: 'Ana', faccao: 'Dinastia das Rapinas', pontos: 25, venceu: false },
+        { jogador: 'Bruno', faccao: 'Malandro', pontos: 30, venceu: true },
+        { jogador: 'Carla', faccao: 'Marqueses', pontos: 20, venceu: false },
+        { jogador: 'Diego', faccao: 'Lagartos Cultistas', pontos: 10, venceu: false }
       ]
     },
     {
       data: '2026-09-15T20:00:00Z',
       resultados: [
-        { jogador: 'Ana', faccao: 'Vagabond', pontos: 28, venceu: true },
-        { jogador: 'Carla', faccao: 'Riverfolk Company', pontos: 15, venceu: false },
-        { jogador: 'Diego', faccao: 'Lizard Cult', pontos: 12, venceu: false }
+        { jogador: 'Ana', faccao: 'Malandro', pontos: 28, venceu: true },
+        { jogador: 'Carla', faccao: 'Companhia Ribeirinha', pontos: 15, venceu: false },
+        { jogador: 'Diego', faccao: 'Lagartos Cultistas', pontos: 12, venceu: false }
       ]
     }
   ]

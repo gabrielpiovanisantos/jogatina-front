@@ -13,13 +13,13 @@ test.describe('Finish game with backend players', () => {
     await page.getByRole('button', { name: '📝 Registrar Partida' }).click();
 
     await page.getByLabel('Jogador 1').selectOption({ label: 'Ana' });
-    await page.getByRole('combobox').nth(1).selectOption('Marquise de Cat');
+    await page.getByRole('combobox').nth(1).selectOption('Marqueses');
     await page.getByRole('spinbutton').first().fill('30');
     await page.getByRole('checkbox').first().check();
 
     await page.getByRole('button', { name: '+ Adicionar Jogador' }).click();
     await page.getByLabel('Jogador 2').selectOption({ label: 'Bruno' });
-    await page.getByRole('combobox').nth(3).selectOption('Vagabond');
+    await page.getByRole('combobox').nth(3).selectOption('Malandro');
     await page.getByRole('spinbutton').nth(1).fill('20');
 
     const alerta = page.waitForEvent('dialog');

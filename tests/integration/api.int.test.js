@@ -138,9 +138,9 @@ describe('apiService ↔ real backend', () => {
       await apiService.registrarPartida({
         dateTime: '2026-10-01T20:00:00Z',
         results: [
-          { playerId: ids.Ana, faction: 'Marquise de Cat', points: 30, won: true },
-          { playerId: ids.Bruno, faction: 'Vagabond', points: 20, won: false },
-          { playerId: ids.Carla, faction: 'Lizard Cult', points: 12, won: false }
+          { playerId: ids.Ana, faction: 'Marqueses', points: 30, won: true },
+          { playerId: ids.Bruno, faction: 'Malandro', points: 20, won: false },
+          { playerId: ids.Carla, faction: 'Lagartos Cultistas', points: 12, won: false }
         ]
       });
 
