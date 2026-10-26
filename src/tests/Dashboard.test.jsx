@@ -303,4 +303,51 @@ describe('Dashboard component', () => {
       expect(onMudarPeriodo).toHaveBeenCalledWith('12m');
     });
   });
+
+  describe('initial player', () => {
+    it('given an initial player when rendering then selects them and loads their factions', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+
+      render(<Dashboard jogadorInicial="2" />);
+
+      expect(await screen.findByLabelText('Jogador:')).toHaveDisplayValue('Bruno');
+      await screen.findByRole('cell', { name: 'Companhia Ribeirinha' });
+      expect(apiService.default.obterRankingJogador).toHaveBeenCalledTimes(1);
+      expect(apiService.default.obterRankingJogador).toHaveBeenCalledWith('2', 'tudo');
+    });
+
+    it.each(['999', 'abc'])('given the unknown initial player "%s" when rendering then falls back to the first one without requesting it', async (id) => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+
+      render(<Dashboard jogadorInicial={id} />);
+
+      expect(await screen.findByLabelText('Jogador:')).toHaveDisplayValue('Ana');
+      await screen.findByRole('table');
+      expect(apiService.default.obterRankingJogador).not.toHaveBeenCalledWith(id, expect.anything());
+      expect(apiService.default.obterRankingJogador).toHaveBeenCalledWith('1', 'tudo');
+    });
+
+    it('given an initial player who did not play in the period when rendering then falls back to the first one listed', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce([
+        JOGADORES[0], { ...JOGADORES[1], totalGames: 0 }
+      ]);
+
+      render(<Dashboard jogadorInicial="2" periodo="3m" />);
+
+      expect(await screen.findByLabelText('Jogador:')).toHaveDisplayValue('Ana');
+    });
+
+    it('given a selection handler when the selection settles or changes then reports the effective player', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+      const onMudarJogador = vi.fn();
+
+      render(<Dashboard jogadorInicial="999" onMudarJogador={onMudarJogador} />);
+
+      await waitFor(() => expect(onMudarJogador).toHaveBeenLastCalledWith('1'));
+      expect(onMudarJogador).not.toHaveBeenCalledWith('999');
+
+      fireEvent.change(screen.getByLabelText('Jogador:'), { target: { value: '2' } });
+      await waitFor(() => expect(onMudarJogador).toHaveBeenLastCalledWith('2'));
+    });
+  });
 });

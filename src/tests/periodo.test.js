@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  limitesDoPeriodo, periodoValido, diasDoPeriodo, temFiltro, descreverPeriodo, periodoPersonalizado
+  limitesDoPeriodo, periodoValido, diasDoPeriodo, temFiltro, descreverPeriodo, periodoPersonalizado, jogadoresDoPeriodo
 } from '../utils/periodo.js';
 
 // Datas locais: os limites são calculados no fuso do usuário
@@ -70,5 +70,12 @@ describe('periodo utils', () => {
     expect(descreverPeriodo('3m')).toBe('últimos 3 meses');
     expect(descreverPeriodo('2026-01-10_2026-03-31')).toBe('de 10/01/2026 a 31/03/2026');
     expect(diasDoPeriodo('ano')).toBeNull();
+  });
+
+  it('given players with zero games when filtering by period then hides them only when there is a period', () => {
+    const jogadores = [{ playerId: 1, totalGames: 3 }, { playerId: 2, totalGames: 0 }];
+
+    expect(jogadoresDoPeriodo(jogadores, '3m')).toEqual([{ playerId: 1, totalGames: 3 }]);
+    expect(jogadoresDoPeriodo(jogadores, 'tudo')).toEqual(jogadores);
   });
 });

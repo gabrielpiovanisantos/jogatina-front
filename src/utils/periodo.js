@@ -67,6 +67,11 @@ export const limitesDoPeriodo = (periodo, hoje = new Date()) => {
 
 export const temFiltro = (periodo) => periodoValido(periodo) && periodo !== PERIODO_PADRAO;
 
+// Com período, o backend lista todos os jogadores e zera quem não jogou nele.
+// Regra única para o Dashboard de Jogadores e o Ranking: esses ficam de fora.
+export const jogadoresDoPeriodo = (jogadores, periodo) =>
+    temFiltro(periodo) ? jogadores.filter(j => j.totalGames > 0) : jogadores;
+
 // Texto curto para as mensagens de estado vazio
 export const descreverPeriodo = (periodo) => {
     const atalho = ATALHOS_PERIODO.find(a => a.id === periodo);

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App.jsx';
 import * as apiService from '../services/api.js';
@@ -268,5 +268,116 @@ describe('App ranking tab', () => {
     await userEvent.click(screen.getByRole('button', { name: /Criar Mesa/i }));
 
     expect(window.location.hash).toBe('#criar');
+  });
+});
+
+describe('App ranking period and player links', () => {
+  const JOGADORES = [
+    { playerId: 1, playerName: 'Ana', totalScore: 75, totalGames: 3, totalVictories: 2, differentFactions: 2 },
+    { playerId: 2, playerName: 'Bruno', totalScore: 52, totalGames: 2, totalVictories: 1, differentFactions: 2 }
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    apiService.default.obterRanking.mockResolvedValue(JOGADORES);
+    apiService.default.obterRankingJogador.mockResolvedValue({ factions: [] });
+    apiService.default.listarFaccoes.mockResolvedValue([DETALHE]);
+    apiService.default.obterFaccao.mockResolvedValue(DETALHE);
+  });
+
+  it('given type and period in the url when loading the ranking then uses both and keeps them', async () => {
+    window.history.replaceState(null, '', '#ranking?tipo=faccoes&periodo=3m');
+    render(<App />);
+
+    await screen.findByRole('button', { name: 'Aliança da Floresta' });
+    expect(apiService.default.listarFaccoes).toHaveBeenCalledWith('3m');
+    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('Últimos 3 meses');
+    expect(window.location.hash).toBe('#ranking?tipo=faccoes&periodo=3m');
+  });
+
+  it('given a period chosen in the ranking when opening the dashboards then they use the same period', async () => {
+    window.history.replaceState(null, '', '#ranking');
+    render(<App />);
+
+    await userEvent.selectOptions(await screen.findByLabelText('Período:'), 'Este ano');
+    expect(window.location.hash).toBe('#ranking?periodo=ano');
+
+    await userEvent.click(screen.getByRole('button', { name: '🛡️ Facções' }));
+    await screen.findByRole('button', { name: 'Aliança da Floresta' });
+    expect(apiService.default.listarFaccoes).toHaveBeenLastCalledWith('ano');
+    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('Este ano');
+  });
+
+  it('given a period chosen on the players dashboard when opening the ranking then it uses the same period', async () => {
+    window.history.replaceState(null, '', '#jogadores');
+    render(<App />);
+
+    await userEvent.selectOptions(await screen.findByLabelText('Período:'), 'Últimos 3 meses');
+    await userEvent.click(screen.getByRole('button', { name: /🏆 Ranking/ }));
+
+    await screen.findByRole('button', { name: 'Bruno' });
+    expect(apiService.default.obterRanking).toHaveBeenLastCalledWith('3m');
+    expect(window.location.hash).toBe('#ranking?periodo=3m');
+  });
+
+  it('given the players ranking when clicking a player then opens the players dashboard with them and the period', async () => {
+    window.history.replaceState(null, '', '#ranking?periodo=3m');
+    render(<App />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Bruno' }));
+
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('👤 Dashboard de Jogadores');
+    expect(await screen.findByLabelText('Jogador:')).toHaveDisplayValue('Bruno');
+    await waitFor(() => expect(window.location.hash).toBe('#jogadores?jogador=2&periodo=3m'));
+    expect(apiService.default.obterRankingJogador).toHaveBeenCalledWith('2', '3m');
+    expect(screen.getByRole('button', { name: '👤 Jogadores' })).toHaveClass('active');
+  });
+
+  it('given a player in the url when loading the players dashboard then selects them', async () => {
+    window.history.replaceState(null, '', '#jogadores?jogador=2');
+    render(<App />);
+
+    expect(await screen.findByLabelText('Jogador:')).toHaveDisplayValue('Bruno');
+    expect(window.location.hash).toBe('#jogadores?jogador=2');
+  });
+
+  it('given a player chosen on the players dashboard when changing it then keeps it in the url', async () => {
+    window.history.replaceState(null, '', '#jogadores');
+    render(<App />);
+
+    await waitFor(() => expect(window.location.hash).toBe('#jogadores?jogador=1'));
+    fireEvent.change(await screen.findByLabelText('Jogador:'), { target: { value: '2' } });
+
+    await waitFor(() => expect(window.location.hash).toBe('#jogadores?jogador=2'));
+  });
+
+  it.each(['abc', '999', '-1', ''])('given the invalid player "%s" in the url when loading then falls back to the first player', async (id) => {
+    window.history.replaceState(null, '', `#jogadores?jogador=${id}&periodo=12m`);
+    render(<App />);
+
+    expect(await screen.findByLabelText('Jogador:')).toHaveDisplayValue('Ana');
+    await waitFor(() => expect(window.location.hash).toBe('#jogadores?jogador=1&periodo=12m'));
+  });
+
+  it('given the factions ranking with a period when clicking a faction then opens its detail with the period', async () => {
+    window.history.replaceState(null, '', '#ranking?tipo=faccoes&periodo=3m');
+    render(<App />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Aliança da Floresta' }));
+
+    expect(await screen.findByText(/Desempenho por jogador/i)).toBeInTheDocument();
+    expect(apiService.default.obterFaccao).toHaveBeenCalledWith('Aliança da Floresta', '3m');
+    expect(window.location.hash).toBe('#faccao/Alian%C3%A7a%20da%20Floresta?periodo=3m');
+  });
+
+  it('given a selected player when leaving the players dashboard then drops the player from the url', async () => {
+    window.history.replaceState(null, '', '#jogadores?jogador=2');
+    render(<App />);
+    await screen.findByLabelText('Jogador:');
+
+    await userEvent.click(screen.getByRole('button', { name: /🏆 Ranking/ }));
+
+    await screen.findByRole('button', { name: 'Bruno' });
+    expect(window.location.hash).toBe('#ranking');
   });
 });

@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import apiService from '../services/api.js';
 import { formatarPorcentagem, formatarMedia } from '../utils/faccoes.js';
-import { PERIODO_PADRAO, temFiltro, descreverPeriodo } from '../utils/periodo.js';
+import { PERIODO_PADRAO, temFiltro, descreverPeriodo, jogadoresDoPeriodo } from '../utils/periodo.js';
 import SeletorPeriodo from '../components/SeletorPeriodo.jsx';
 import './Dashboard.css';
 import './Faccoes.css';
 
 // Dashboard de jogadores: um jogador por vez, com cards e as facções que ele jogou.
 // O de facções é a tela Faccoes; os dois compartilham o período.
-export default function Dashboard({ onSelecionarFaccao, periodo = PERIODO_PADRAO, onMudarPeriodo }) {
+// jogadorInicial vem do hash (#jogadores?jogador=<id>) ou do Ranking; se não estiver
+// na lista, vale o padrão: o primeiro jogador. onMudarJogador recebe a escolha efetiva.
+export default function Dashboard({ onSelecionarFaccao, periodo = PERIODO_PADRAO, onMudarPeriodo, jogadorInicial = '', onMudarJogador }) {
     const [jogadores, setJogadores] = useState([]);
-    const [jogadorSelecionadoId, setJogadorSelecionadoId] = useState('');
+    const [jogadorSelecionadoId, setJogadorSelecionadoId] = useState(String(jogadorInicial));
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState(null);
     // Facções do jogador selecionado, vindas de GET /dashboard/ranking/{playerId}
@@ -28,8 +30,7 @@ export default function Dashboard({ onSelecionarFaccao, periodo = PERIODO_PADRAO
                 setErro(null);
                 const dados = await apiService.obterRanking(periodo);
                 if (ignorar) return;
-                // Com período, o backend lista todo mundo e zera quem não jogou nele: escondemos esses
-                const visiveis = temFiltro(periodo) ? dados.filter(j => j.totalGames > 0) : dados;
+                const visiveis = jogadoresDoPeriodo(dados, periodo);
                 setJogadores(visiveis);
                 // Mantém o jogador escolhido se ele continua na lista
                 setJogadorSelecionadoId(atual =>
@@ -40,6 +41,7 @@ export default function Dashboard({ onSelecionarFaccao, periodo = PERIODO_PADRAO
             } catch (error) {
                 if (ignorar) return;
                 setJogadores([]);
+                setJogadorSelecionadoId('');
                 setErro(`Erro ao carregar jogadores: ${error.message}`);
                 console.error(error);
             } finally {
@@ -51,8 +53,17 @@ export default function Dashboard({ onSelecionarFaccao, periodo = PERIODO_PADRAO
         return () => { ignorar = true; };
     }, [periodo]);
 
+    // Leva a escolha para o App, que a guarda no hash
     useEffect(() => {
-        if (!jogadorSelecionadoId) return;
+        if (!carregando) onMudarJogador?.(jogadorSelecionadoId);
+    }, [jogadorSelecionadoId, carregando, onMudarJogador]);
+
+    // Só busca as facções de um jogador confirmado na lista: um id vindo do hash
+    // pode não existir (ou não ter jogado no período)
+    const selecionadoNaLista = jogadores.some(j => String(j.playerId) === jogadorSelecionadoId);
+
+    useEffect(() => {
+        if (!selecionadoNaLista) return;
         // Ignora a resposta de um jogador que já deixou de estar selecionado
         let ignorar = false;
 
@@ -73,7 +84,7 @@ export default function Dashboard({ onSelecionarFaccao, periodo = PERIODO_PADRAO
 
         buscarFaccoesJogador();
         return () => { ignorar = true; };
-    }, [jogadorSelecionadoId, periodo]);
+    }, [jogadorSelecionadoId, periodo, selecionadoNaLista]);
 
     const faccoesVencedoras = faccoesJogador.filter(f => f.totalVictories > 0);
 

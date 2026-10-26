@@ -186,10 +186,9 @@ describe('Ranking component', () => {
       expect(screen.getAllByRole('columnheader').map(h => h.textContent)).toEqual(
         ['Posição', 'Facção', 'Partidas', 'Vitórias', '% Vitórias', 'Média de pontos', 'Jogadores']
       );
-      // Sem período no Ranking: pede todo o histórico, e só o ranking de facções
-      expect(apiService.default.listarFaccoes).toHaveBeenCalledWith();
+      // Sem período escolhido, pede todo o histórico, e só o ranking de facções
+      expect(apiService.default.listarFaccoes).toHaveBeenCalledWith('tudo');
       expect(apiService.default.obterRanking).not.toHaveBeenCalled();
-      expect(screen.queryByLabelText('Período:')).not.toBeInTheDocument();
     });
 
     it('given the factions ranking when clicking a faction then opens it by name', async () => {
@@ -235,6 +234,111 @@ describe('Ranking component', () => {
       expect(await screen.findByText('Ana')).toBeInTheDocument();
       expect(screen.queryByText('Marqueses')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Jogadores' })).toHaveAttribute('aria-pressed', 'true');
+    });
+  });
+
+  describe('period filter and player links', () => {
+    const JOGADORES = [
+      { playerId: 1, playerName: 'Ana', totalScore: 75, totalGames: 3, totalVictories: 2 },
+      { playerId: 2, playerName: 'Bruno', totalScore: 0, totalGames: 0, totalVictories: 0 }
+    ];
+
+    it('given a period when rendering the players ranking then requests it and shows the shared selector', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+
+      render(<Ranking periodo="3m" onMudarPeriodo={vi.fn()} onMudarTipo={vi.fn()} />);
+
+      await screen.findByText('Ana');
+      expect(apiService.default.obterRanking).toHaveBeenCalledWith('3m');
+      expect(screen.getByLabelText('Período:')).toHaveDisplayValue('Últimos 3 meses');
+    });
+
+    it('given a period when rendering the factions ranking then requests it', async () => {
+      apiService.default.listarFaccoes.mockResolvedValueOnce(FACCOES);
+
+      render(<Ranking tipo="faccoes" periodo="ano" onMudarPeriodo={vi.fn()} onMudarTipo={vi.fn()} onSelecionarFaccao={vi.fn()} />);
+
+      await screen.findByText('Marqueses');
+      expect(apiService.default.listarFaccoes).toHaveBeenCalledWith('ano');
+    });
+
+    it('given the period selector when choosing a shortcut then reports it', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+      const onMudarPeriodo = vi.fn();
+
+      render(<Ranking periodo="tudo" onMudarPeriodo={onMudarPeriodo} onMudarTipo={vi.fn()} />);
+      await userEvent.selectOptions(screen.getByLabelText('Período:'), 'Últimos 12 meses');
+
+      expect(onMudarPeriodo).toHaveBeenCalledWith('12m');
+    });
+
+    it('given a period when some players did not play in it then hides them, like the players dashboard', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+
+      render(<Ranking periodo="3m" onMudarPeriodo={vi.fn()} />);
+
+      await screen.findByText('Ana');
+      expect(screen.queryByText('Bruno')).not.toBeInTheDocument();
+      expect(screen.getAllByRole('row')).toHaveLength(2); // cabeçalho + Ana
+    });
+
+    it('given no period when some players have zero games then still lists them', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+
+      render(<Ranking periodo="tudo" onMudarPeriodo={vi.fn()} />);
+
+      expect(await screen.findByText('Bruno')).toBeInTheDocument();
+    });
+
+    it('given a period nobody played in when rendering the players ranking then shows the empty period message', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES.map(j => ({ ...j, totalGames: 0 })));
+
+      render(<Ranking periodo="2024-01-01_2024-12-31" onMudarPeriodo={vi.fn()} />);
+
+      expect(await screen.findByText(/Nenhuma partida no período \(de 01\/01\/2024 a 31\/12\/2024\)/)).toBeInTheDocument();
+      expect(screen.queryByText(/Comece a jogar/)).not.toBeInTheDocument();
+    });
+
+    it('given a period without games when rendering the factions ranking then shows the empty period message', async () => {
+      apiService.default.listarFaccoes.mockResolvedValueOnce([]);
+
+      render(<Ranking tipo="faccoes" periodo="3m" onMudarPeriodo={vi.fn()} onSelecionarFaccao={vi.fn()} />);
+
+      expect(await screen.findByText(/Nenhuma facção jogada no período \(últimos 3 meses\)/)).toBeInTheDocument();
+    });
+
+    it('given a player row when clicking the name then opens that player by id', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+      const onSelecionarJogador = vi.fn();
+
+      render(<Ranking onSelecionarJogador={onSelecionarJogador} />);
+      await userEvent.click(await screen.findByRole('button', { name: 'Ana' }));
+
+      expect(onSelecionarJogador).toHaveBeenCalledWith(1);
+    });
+
+    it('given a player row when using only the keyboard then the name can be focused and opened with Enter', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+      const onSelecionarJogador = vi.fn();
+      const user = userEvent.setup();
+
+      render(<Ranking onSelecionarJogador={onSelecionarJogador} />);
+      const botaoAna = await screen.findByRole('button', { name: 'Ana' });
+
+      await user.tab();
+      expect(botaoAna).toHaveFocus();
+      await user.keyboard('{Enter}');
+
+      expect(onSelecionarJogador).toHaveBeenCalledWith(1);
+    });
+
+    it('given no player handler when rendering then shows the names as plain text', async () => {
+      apiService.default.obterRanking.mockResolvedValueOnce(JOGADORES);
+
+      render(<Ranking />);
+
+      expect(await screen.findByText('Ana')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Ana' })).not.toBeInTheDocument();
     });
   });
 });

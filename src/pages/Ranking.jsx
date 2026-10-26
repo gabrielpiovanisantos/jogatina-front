@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import apiService from '../services/api.js';
 import TabelaFaccoes from '../components/TabelaFaccoes.jsx';
+import SeletorPeriodo from '../components/SeletorPeriodo.jsx';
+import { PERIODO_PADRAO, temFiltro, descreverPeriodo, jogadoresDoPeriodo } from '../utils/periodo.js';
 import './Ranking.css';
 
 // Os dois rankings da aba: a tabela comparativa de jogadores (padrão) e a de facções
@@ -8,14 +10,19 @@ const TIPOS_RANKING = ['jogadores', 'faccoes'];
 // Sem emoji, para não se confundir com as abas 👤 Jogadores e 🛡️ Facções da navbar
 const ROTULOS_TIPO = { jogadores: 'Jogadores', faccoes: 'Facções' };
 
-export default function Ranking({ tipo = 'jogadores', onMudarTipo, onSelecionarFaccao }) {
+// O período é o mesmo dos dashboards; cada jogador abre o Dashboard de Jogadores
+// e cada facção, o seu detalhe.
+export default function Ranking({
+    tipo = 'jogadores', onMudarTipo, onSelecionarFaccao, onSelecionarJogador,
+    periodo = PERIODO_PADRAO, onMudarPeriodo
+}) {
     const [ranking, setRanking] = useState([]);
     const [faccoes, setFaccoes] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState(null);
 
     useEffect(() => {
-        // Ignora a resposta de um tipo que já deixou de estar selecionado
+        // Ignora a resposta de um tipo ou período que já deixou de estar selecionado
         let ignorar = false;
 
         const buscarRanking = async () => {
@@ -23,12 +30,12 @@ export default function Ranking({ tipo = 'jogadores', onMudarTipo, onSelecionarF
                 setCarregando(true);
                 setErro(null);
                 if (tipo === 'faccoes') {
-                    // Já vem na ordem do backend; o Ranking não filtra por período
-                    const dados = await apiService.listarFaccoes();
+                    // Já vem na ordem do backend
+                    const dados = await apiService.listarFaccoes(periodo);
                     if (!ignorar) setFaccoes(dados);
                 } else {
-                    const dados = await apiService.obterRanking();
-                    if (!ignorar) setRanking(dados);
+                    const dados = await apiService.obterRanking(periodo);
+                    if (!ignorar) setRanking(jogadoresDoPeriodo(dados, periodo));
                 }
             } catch (error) {
                 if (ignorar) return;
@@ -43,11 +50,13 @@ export default function Ranking({ tipo = 'jogadores', onMudarTipo, onSelecionarF
 
         buscarRanking();
         return () => { ignorar = true; };
-    }, [tipo]);
+    }, [tipo, periodo]);
 
     return (
         <div className="ranking-container">
             <h1>🏆 Ranking</h1>
+
+            {onMudarPeriodo && <SeletorPeriodo periodo={periodo} onMudar={onMudarPeriodo} />}
 
             {onMudarTipo && (
                 <div className="seletor-tipo-ranking" role="group" aria-label="Tipo de ranking">
@@ -79,7 +88,9 @@ export default function Ranking({ tipo = 'jogadores', onMudarTipo, onSelecionarF
 
                             {!erro && faccoes.length === 0 && (
                                 <div className="mensagem-vazia">
-                                    Nenhuma facção no ranking ainda. Comece a jogar! 🎮
+                                    {temFiltro(periodo)
+                                        ? `Nenhuma facção jogada no período (${descreverPeriodo(periodo)}). Escolha outro período. 📅`
+                                        : 'Nenhuma facção no ranking ainda. Comece a jogar! 🎮'}
                                 </div>
                             )}
                         </>
@@ -105,7 +116,17 @@ export default function Ranking({ tipo = 'jogadores', onMudarTipo, onSelecionarF
                                                     {index === 2 && '🥉'}
                                                     {index > 2 && `#${index + 1}`}
                                                 </td>
-                                                <td className="nome">{jogador.playerName}</td>
+                                                <td className="nome">
+                                                {onSelecionarJogador ? (
+                                                    <button
+                                                        type="button"
+                                                        className="link-jogador"
+                                                        onClick={() => onSelecionarJogador(jogador.playerId)}
+                                                    >
+                                                        {jogador.playerName}
+                                                    </button>
+                                                ) : jogador.playerName}
+                                            </td>
                                                 <td className="pontos">{jogador.totalScore}</td>
                                                 <td className="partidas">{jogador.totalGames}</td>
                                                 <td className="vitorias">{jogador.totalVictories}</td>
@@ -117,7 +138,9 @@ export default function Ranking({ tipo = 'jogadores', onMudarTipo, onSelecionarF
 
                             {(!ranking || ranking.length === 0) && (
                                 <div className="mensagem-vazia">
-                                    Nenhum jogador no ranking ainda. Comece a jogar! 🎮
+                                    {temFiltro(periodo)
+                                        ? `Nenhuma partida no período (${descreverPeriodo(periodo)}). Escolha outro período. 📅`
+                                        : 'Nenhum jogador no ranking ainda. Comece a jogar! 🎮'}
                                 </div>
                             )}
                         </>

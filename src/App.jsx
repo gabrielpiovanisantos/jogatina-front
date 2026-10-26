@@ -23,7 +23,7 @@ const PREFIXO_FACCAO = 'faccao/';
 
 // Telas dos dashboards: compartilham o período, que vai no hash como
 // "?periodo=3m" (veja utils/periodo.js). "Tudo", o padrão, fica fora da URL.
-const TELAS_COM_PERIODO = ['jogadores', 'faccoes', 'faccao'];
+const TELAS_COM_PERIODO = ['jogadores', 'faccoes', 'faccao', 'ranking'];
 
 // Parte do hash antes do "?"
 const rotaDaUrl = () => window.location.hash.slice(1).split('?')[0];
@@ -33,6 +33,13 @@ const parametroDaUrl = (nome) => new URLSearchParams(window.location.hash.split(
 const periodoDaUrl = () => {
     const periodo = parametroDaUrl('periodo');
     return periodo && periodoValido(periodo) ? periodo : PERIODO_PADRAO;
+};
+
+// Jogador do Dashboard de Jogadores (#jogadores?jogador=<id>). Um id que não é
+// número fica de fora; um que não existe cai no padrão dentro do Dashboard.
+const jogadorDaUrl = () => {
+    const id = parametroDaUrl('jogador');
+    return id && /^\d+$/.test(id) ? id : '';
 };
 
 // O Ranking abre em jogadores; #ranking?tipo=faccoes abre o de facções
@@ -60,17 +67,19 @@ function App() {
     const [faccaoSelecionada, setFaccaoSelecionada] = useState(faccaoDaUrl);
     const [periodo, setPeriodo] = useState(periodoDaUrl);
     const [tipoRanking, setTipoRanking] = useState(tipoRankingDaUrl);
+    const [jogadorSelecionado, setJogadorSelecionado] = useState(jogadorDaUrl);
 
     useEffect(() => {
         const rota = tela === 'faccao'
             ? `${PREFIXO_FACCAO}${encodeURIComponent(faccaoSelecionada)}`
             : tela;
         const params = new URLSearchParams();
-        if (TELAS_COM_PERIODO.includes(tela) && periodo !== PERIODO_PADRAO) params.set('periodo', periodo);
         if (tela === 'ranking' && tipoRanking !== 'jogadores') params.set('tipo', tipoRanking);
+        if (tela === 'jogadores' && jogadorSelecionado) params.set('jogador', jogadorSelecionado);
+        if (TELAS_COM_PERIODO.includes(tela) && periodo !== PERIODO_PADRAO) params.set('periodo', periodo);
         const consulta = params.toString();
         window.history.replaceState(null, '', `#${rota}${consulta ? `?${consulta}` : ''}`);
-    }, [tela, faccaoSelecionada, periodo, tipoRanking]);
+    }, [tela, faccaoSelecionada, periodo, tipoRanking, jogadorSelecionado]);
 
     const irParaSetup = (dados) => {
         setDadosMesa(dados);
@@ -97,6 +106,12 @@ function App() {
         setTela('faccoes');
     };
 
+    // Vindo do Ranking: abre o Dashboard de Jogadores já com o jogador escolhido
+    const irParaJogador = (playerId) => {
+        setJogadorSelecionado(String(playerId));
+        setTela('jogadores');
+    };
+
     const irParaFaccao = (faccao) => {
         setFaccaoSelecionada(faccao);
         setTela('faccao');
@@ -111,13 +126,30 @@ function App() {
             case 'partida':
                 return <RegistrarPartida />;
             case 'ranking':
-                return <Ranking tipo={tipoRanking} onMudarTipo={setTipoRanking} onSelecionarFaccao={irParaFaccao} />;
+                return (
+                    <Ranking
+                        tipo={tipoRanking}
+                        onMudarTipo={setTipoRanking}
+                        onSelecionarFaccao={irParaFaccao}
+                        onSelecionarJogador={irParaJogador}
+                        periodo={periodo}
+                        onMudarPeriodo={setPeriodo}
+                    />
+                );
             case 'faccoes':
                 return <Faccoes onSelecionarFaccao={irParaFaccao} periodo={periodo} onMudarPeriodo={setPeriodo} />;
             case 'faccao':
                 return <FaccaoDetalhe faccao={faccaoSelecionada} onVoltar={irParaFaccoes} periodo={periodo} onMudarPeriodo={setPeriodo} />;
             case 'jogadores':
-                return <Dashboard onSelecionarFaccao={irParaFaccao} periodo={periodo} onMudarPeriodo={setPeriodo} />;
+                return (
+                    <Dashboard
+                        onSelecionarFaccao={irParaFaccao}
+                        periodo={periodo}
+                        onMudarPeriodo={setPeriodo}
+                        jogadorInicial={jogadorSelecionado}
+                        onMudarJogador={setJogadorSelecionado}
+                    />
+                );
             default:
                 return <CriarMesa onContinuar={irParaSetup} />;
         }
