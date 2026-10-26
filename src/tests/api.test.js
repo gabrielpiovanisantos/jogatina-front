@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import apiService from '../services/api.js';
+import { definirPeriodosSalvos } from '../utils/periodo.js';
 
 describe('API Service', () => {
 
@@ -485,5 +486,88 @@ describe('API Service', () => {
       expect(headers['Content-Type']).toBe('application/json');
     });
   });
-});
 
+  describe('saved periods (temporadas) → /api/periods', () => {
+    const TEMPORADA = { id: 7, name: 'Temporada 3', from: '2026-10-01T03:00:00.000Z', to: null };
+    const urlEMetodo = () => {
+      const [url, opcoes] = globalThis.fetch.mock.calls[0];
+      return [new URL(url, 'http://base').pathname, opcoes.method];
+    };
+
+    afterEach(() => definirPeriodosSalvos([]));
+
+    it('given saved periods when listing them then sends a GET to /api/periods', async () => {
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => [TEMPORADA] });
+
+      expect(await apiService.listarPeriodosSalvos()).toEqual([TEMPORADA]);
+      expect(urlEMetodo()).toEqual(['/api/periods', 'GET']);
+    });
+
+    it('given a new period when creating it then POSTs name, from and a null to, and returns the created object', async () => {
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, status: 201, json: async () => TEMPORADA });
+
+      const criada = await apiService.criarPeriodoSalvo({ name: 'Temporada 3', from: TEMPORADA.from });
+
+      expect(urlEMetodo()).toEqual(['/api/periods', 'POST']);
+      const opcoes = globalThis.fetch.mock.calls[0][1];
+      expect(opcoes.headers).toEqual(expect.objectContaining({ 'Content-Type': 'application/json' }));
+      expect(JSON.parse(opcoes.body)).toEqual({ name: 'Temporada 3', from: TEMPORADA.from, to: null });
+      expect(criada).toEqual(TEMPORADA);
+    });
+
+    it('given a period when updating it then PUTs the whole object to /api/periods/{id}', async () => {
+      const atualizada = { ...TEMPORADA, to: '2026-12-01T03:00:00.000Z' };
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => atualizada });
+
+      expect(await apiService.atualizarPeriodoSalvo(7, atualizada)).toEqual(atualizada);
+      expect(urlEMetodo()).toEqual(['/api/periods/7', 'PUT']);
+      expect(JSON.parse(globalThis.fetch.mock.calls[0][1].body)).toEqual({ name: 'Temporada 3', from: TEMPORADA.from, to: atualizada.to });
+    });
+
+    it('given a period when deleting it then sends a DELETE to /api/periods/{id}', async () => {
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, status: 204 });
+
+      await apiService.excluirPeriodoSalvo(7);
+
+      expect(urlEMetodo()).toEqual(['/api/periods/7', 'DELETE']);
+    });
+
+    it.each([
+      'Nome do período não pode ser vazio',
+      'Já existe um período com o nome: Temporada 3',
+      "'from' precisa ser anterior a 'to'"
+    ])('given the backend rejects with 400 "%s" when creating then throws that message', async (mensagem) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 400, text: async () => mensagem });
+
+      await expect(apiService.criarPeriodoSalvo({ name: 'x', from: TEMPORADA.from })).rejects.toMatchObject({ message: mensagem, status: 400 });
+    });
+
+    it.each([
+      ['atualizarPeriodoSalvo', () => apiService.atualizarPeriodoSalvo(99, TEMPORADA), 'Erro 404 ao atualizar período'],
+      ['excluirPeriodoSalvo', () => apiService.excluirPeriodoSalvo(99), 'Erro 404 ao excluir período']
+    ])('given an unknown id when calling %s then throws a 404', async (_, chamar, mensagem) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 404, text: async () => '' });
+
+      await expect(chamar()).rejects.toMatchObject({ message: mensagem, status: 404 });
+    });
+
+    it('given a saved period is selected when calling the dashboards then sends its from and to', async () => {
+      definirPeriodosSalvos([
+        { id: 1, name: 'Temporada 1', from: '2025-11-01T03:00:00.000Z', to: '2026-04-01T03:00:00.000Z' },
+        TEMPORADA
+      ]);
+      globalThis.fetch.mockResolvedValue({ ok: true, json: async () => [] });
+
+      await apiService.obterRanking('salvo:1');
+      await apiService.listarFaccoes('salvo:7');
+
+      const [comFim, emAndamento] = globalThis.fetch.mock.calls.map(([url]) => new URL(url, 'http://base').searchParams);
+      expect(comFim.get('from')).toBe('2025-11-01T03:00:00.000Z');
+      expect(comFim.get('to')).toBe('2026-04-01T03:00:00.000Z');
+      expect(emAndamento.get('from')).toBe(TEMPORADA.from);
+      expect(emAndamento.has('to')).toBe(false);
+    });
+  });
+});

@@ -1,0 +1,174 @@
+/* Mesmo cartão verde das outras telas */
+.temporadas-container {
+    width: 100%;
+    min-width: 0;
+    max-width: 900px;
+    margin: 50px auto;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    background-color: #2b4522;
+    color: #ffffff;
+    box-sizing: border-box;
+}
+
+.temporadas-container h1 {
+    text-align: center;
+    color: #e8f5e9;
+    margin-top: 0;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.temporadas-container h2 {
+    color: #e8f5e9;
+    font-size: 1.4rem;
+    margin: 30px 0 15px;
+}
+
+.explicacao-temporadas,
+.dica-temporada {
+    color: #c8e6c9;
+}
+
+.explicacao-temporadas {
+    text-align: center;
+    margin: 0 0 10px;
+}
+
+.formulario-temporada {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.formulario-temporada label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 600;
+    color: #c8e6c9;
+}
+
+.formulario-temporada input[type="text"],
+.formulario-temporada input[type="date"] {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+.dica-temporada {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.formulario-temporada .opcao-encerrar {
+    flex-basis: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.formulario-temporada .erro-mensagem {
+    flex-basis: 100%;
+    margin-bottom: 0;
+}
+
+.temporadas-container button {
+    padding: 8px 14px;
+    border-radius: 5px;
+    border: 1px solid #4a7c59;
+    background-color: #1b2e15;
+    color: #c8e6c9;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.temporadas-container button:hover,
+.temporadas-container .botao-principal {
+    background-color: #4a7c59;
+    color: #ffffff;
+}
+
+.temporadas-container button:focus-visible {
+    outline: 2px solid #f0a35e;
+    outline-offset: 2px;
+}
+
+.temporadas-container button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.sucesso-temporada {
+    margin-top: 15px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    background-color: #1b2e15;
+    border-left: 4px solid #f0a35e;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.lista-temporadas {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.lista-temporadas li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    background-color: #1b2e15;
+    border-radius: 8px;
+}
+
+.selo-andamento {
+    color: #f0a35e;
+    font-size: 0.9rem;
+}
+
+.datas-temporada {
+    color: #c8e6c9;
+    font-size: 0.95rem;
+}
+
+.acoes-temporada {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Texto só para leitor de tela ("Editar Temporada 1") */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 600px) {
+    .temporadas-container {
+        margin: 20px auto;
+        padding: 15px;
+    }
+
+    .temporadas-container h1 {
+        font-size: 1.8rem;
+    }
+}

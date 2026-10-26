@@ -1,15 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App.jsx';
 import * as apiService from '../services/api.js';
+import { definirPeriodosSalvos } from '../utils/periodo.js';
 
 vi.mock('../services/api.js', () => ({
   default: {
     obterRanking: vi.fn(),
     obterRankingJogador: vi.fn(),
     listarFaccoes: vi.fn(),
-    obterFaccao: vi.fn()
+    obterFaccao: vi.fn(),
+    listarPeriodosSalvos: vi.fn(),
+    criarPeriodoSalvo: vi.fn(),
+    atualizarPeriodoSalvo: vi.fn(),
+    excluirPeriodoSalvo: vi.fn()
   }
 }));
 
@@ -25,6 +30,7 @@ describe('App faction navigation', () => {
     apiService.default.obterRankingJogador.mockResolvedValue({ factions: [] });
     apiService.default.listarFaccoes.mockResolvedValue([DETALHE]);
     apiService.default.obterFaccao.mockResolvedValue(DETALHE);
+    apiService.default.listarPeriodosSalvos.mockResolvedValue([]);
   });
 
   it('given the navbar when clicking Facções and then a faction then shows its detail and keeps it in the url', async () => {
@@ -131,6 +137,7 @@ describe('App dashboards tabs', () => {
     apiService.default.obterRankingJogador.mockResolvedValue({ factions: [] });
     apiService.default.listarFaccoes.mockResolvedValue([DETALHE]);
     apiService.default.obterFaccao.mockResolvedValue(DETALHE);
+    apiService.default.listarPeriodosSalvos.mockResolvedValue([]);
   });
 
   const abaAtiva = () => screen.getAllByRole('button').filter(b => b.classList.contains('active')).map(b => b.textContent);
@@ -196,6 +203,7 @@ describe('App ranking tab', () => {
     apiService.default.obterRankingJogador.mockResolvedValue({ factions: [] });
     apiService.default.listarFaccoes.mockResolvedValue([DETALHE]);
     apiService.default.obterFaccao.mockResolvedValue(DETALHE);
+    apiService.default.listarPeriodosSalvos.mockResolvedValue([]);
   });
 
   it('given the Ranking button when clicking it then opens the players ranking by default', async () => {
@@ -283,6 +291,7 @@ describe('App ranking period and player links', () => {
     apiService.default.obterRankingJogador.mockResolvedValue({ factions: [] });
     apiService.default.listarFaccoes.mockResolvedValue([DETALHE]);
     apiService.default.obterFaccao.mockResolvedValue(DETALHE);
+    apiService.default.listarPeriodosSalvos.mockResolvedValue([]);
   });
 
   it('given type and period in the url when loading the ranking then uses both and keeps them', async () => {
@@ -379,5 +388,158 @@ describe('App ranking period and player links', () => {
 
     await screen.findByRole('button', { name: 'Bruno' });
     expect(window.location.hash).toBe('#ranking');
+  });
+});
+
+describe('App temporadas', () => {
+  const SALVOS = [
+    { id: 2, name: 'Temporada 2', from: new Date(2026, 3, 1).toISOString(), to: null },
+    { id: 1, name: 'Temporada 1', from: new Date(2025, 10, 1).toISOString(), to: new Date(2026, 3, 1).toISOString() }
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Os períodos salvos ficam registrados em utils/periodo.js: cada teste começa do zero
+    definirPeriodosSalvos([]);
+    apiService.default.obterRanking.mockResolvedValue([
+      { playerId: 1, playerName: 'Ana', totalScore: 75, totalGames: 3, totalVictories: 2, differentFactions: 2 }
+    ]);
+    apiService.default.obterRankingJogador.mockResolvedValue({ factions: [] });
+    apiService.default.listarFaccoes.mockResolvedValue([DETALHE]);
+    apiService.default.obterFaccao.mockResolvedValue(DETALHE);
+    apiService.default.listarPeriodosSalvos.mockResolvedValue(SALVOS);
+  });
+
+  it('given the navbar when clicking Nova Temporada then opens the seasons screen', async () => {
+    window.history.replaceState(null, '', '#criar');
+    render(<App />);
+
+    await userEvent.click(screen.getByRole('button', { name: '🗓️ Nova Temporada' }));
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('🗓️ Temporadas');
+    expect(window.location.hash).toBe('#temporadas');
+    expect(await screen.findByText('Temporada 1', { selector: 'strong' })).toBeInTheDocument();
+  });
+
+  it('given a season in the url when loading the ranking then waits for the seasons and uses it', async () => {
+    let responder;
+    apiService.default.listarPeriodosSalvos.mockImplementationOnce(() => new Promise(r => { responder = r; }));
+    window.history.replaceState(null, '', '#ranking?periodo=salvo:1');
+    render(<App />);
+
+    expect(screen.getByText(/Carregando períodos salvos/)).toBeInTheDocument();
+    expect(apiService.default.obterRanking).not.toHaveBeenCalled();
+
+    await act(async () => responder(SALVOS));
+
+    await screen.findByRole('button', { name: 'Ana' });
+    expect(apiService.default.obterRanking).toHaveBeenCalledWith('salvo:1');
+    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('Temporada 1');
+    expect(window.location.hash).toBe('#ranking?periodo=salvo:1');
+  });
+
+  it.each(['salvo:99', 'salvo:abc'])('given the unknown season "%s" in the url when loading then falls back to Tudo', async (periodo) => {
+    window.history.replaceState(null, '', `#faccoes?periodo=${periodo}`);
+    render(<App />);
+
+    await screen.findByRole('button', { name: 'Aliança da Floresta' });
+    expect(apiService.default.listarFaccoes).toHaveBeenCalledWith('tudo');
+    expect(apiService.default.listarFaccoes).not.toHaveBeenCalledWith(periodo);
+    expect(window.location.hash).toBe('#faccoes');
+  });
+
+  it('given the seasons fail to load when a season is in the url then falls back to Tudo and says why', async () => {
+    apiService.default.listarPeriodosSalvos.mockRejectedValueOnce(new Error('Erro 500 ao listar períodos salvos'));
+    window.history.replaceState(null, '', '#faccoes?periodo=salvo:1');
+    render(<App />);
+
+    await screen.findByRole('button', { name: 'Aliança da Floresta' });
+    expect(apiService.default.listarFaccoes).toHaveBeenCalledWith('tudo');
+    expect(screen.getByText(/Não foi possível carregar os períodos salvos: Erro 500/)).toBeInTheDocument();
+  });
+
+  it('given an old backend without /api/periods (404) when opening a dashboard then shows the error and the shortcuts keep working', async () => {
+    apiService.default.listarPeriodosSalvos.mockRejectedValueOnce(
+      Object.assign(new Error('Erro 404 ao listar períodos salvos'), { status: 404 })
+    );
+    window.history.replaceState(null, '', '#faccoes');
+    render(<App />);
+
+    expect(await screen.findByText(/Não foi possível carregar os períodos salvos: Erro 404/)).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Temporadas' })).not.toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('Período:'), 'Últimos 3 meses');
+
+    await waitFor(() => expect(apiService.default.listarFaccoes).toHaveBeenLastCalledWith('3m'));
+    expect(window.location.hash).toBe('#faccoes?periodo=3m');
+  });
+
+  it('given a new season when clicking to see the ranking then opens the ranking filtered by it', async () => {
+    const NOVA = { id: 3, name: 'Temporada 3', from: new Date(2026, 9, 1).toISOString(), to: null };
+    apiService.default.criarPeriodoSalvo.mockResolvedValueOnce(NOVA);
+    apiService.default.atualizarPeriodoSalvo.mockResolvedValueOnce({ ...SALVOS[0], to: NOVA.from });
+    window.history.replaceState(null, '', '#temporadas');
+    render(<App />);
+    await screen.findByText('Temporada 1', { selector: 'strong' });
+
+    apiService.default.listarPeriodosSalvos.mockResolvedValue([NOVA, { ...SALVOS[0], to: NOVA.from }, SALVOS[1]]);
+    const form = screen.getByRole('region', { name: 'Nova temporada' });
+    await userEvent.type(within(form).getByLabelText('Nome'), 'Temporada 3');
+    fireEvent.change(within(form).getByLabelText('Início'), { target: { value: '2026-10-01' } });
+    await userEvent.click(within(form).getByRole('button', { name: 'Criar temporada' }));
+
+    await userEvent.click(await screen.findByRole('button', { name: /Ver o Ranking nesta temporada/ }));
+
+    await screen.findByRole('button', { name: 'Ana' });
+    expect(window.location.hash).toBe('#ranking?periodo=salvo:3');
+    expect(apiService.default.obterRanking).toHaveBeenLastCalledWith('salvo:3');
+    expect(screen.getByLabelText('Período:')).toHaveDisplayValue('Temporada 3');
+    expect(apiService.default.atualizarPeriodoSalvo).toHaveBeenCalledWith(2, { name: 'Temporada 2', from: SALVOS[0].from, to: NOVA.from });
+  });
+
+  it('given the selected season is deleted when back on a dashboard then falls back to Tudo', async () => {
+    window.history.replaceState(null, '', '#temporadas?periodo=salvo:1');
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<App />);
+    await screen.findByText('Temporada 1', { selector: 'strong' });
+
+    // Primeiro escolhe a temporada no Ranking, depois a exclui
+    await userEvent.click(screen.getByRole('button', { name: 'Ranking de Temporada 1' }));
+    await screen.findByRole('button', { name: 'Ana' });
+    expect(window.location.hash).toBe('#ranking?periodo=salvo:1');
+
+    await userEvent.click(screen.getByRole('button', { name: '🗓️ Nova Temporada' }));
+    apiService.default.listarPeriodosSalvos.mockResolvedValue([SALVOS[0]]);
+    await userEvent.click(await screen.findByRole('button', { name: 'Excluir Temporada 1' }));
+    await waitFor(() => expect(screen.queryByText('Temporada 1', { selector: 'strong' })).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole('button', { name: /🏆 Ranking/ }));
+    await screen.findByRole('button', { name: 'Ana' });
+    expect(apiService.default.obterRanking).toHaveBeenLastCalledWith('tudo');
+    expect(window.location.hash).toBe('#ranking');
+    vi.restoreAllMocks();
+  });
+
+  it('given the selected season has its dates edited when back on the ranking then fetches again', async () => {
+    window.history.replaceState(null, '', '#ranking?periodo=salvo:1');
+    render(<App />);
+    await screen.findByRole('button', { name: 'Ana' });
+    const chamadasAntes = apiService.default.obterRanking.mock.calls.length;
+
+    await userEvent.click(screen.getByRole('button', { name: /Gerenciar temporadas/ }));
+    expect(window.location.hash).toBe('#temporadas');
+
+    apiService.default.atualizarPeriodoSalvo.mockResolvedValueOnce({ ...SALVOS[1], to: new Date(2026, 4, 1).toISOString() });
+    apiService.default.listarPeriodosSalvos.mockResolvedValue([SALVOS[0], { ...SALVOS[1], to: new Date(2026, 4, 1).toISOString() }]);
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar Temporada 1' }));
+    const form = screen.getByRole('form', { name: 'Editar Temporada 1' });
+    fireEvent.change(within(form).getByLabelText('Fim (opcional)'), { target: { value: '2026-04-30' } });
+    await userEvent.click(within(form).getByRole('button', { name: 'Salvar' }));
+    await waitFor(() => expect(screen.queryByRole('form', { name: 'Editar Temporada 1' })).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole('button', { name: /🏆 Ranking/ }));
+    await screen.findByRole('button', { name: 'Ana' });
+    expect(apiService.default.obterRanking.mock.calls.length).toBeGreaterThan(chamadasAntes);
+    expect(screen.getByText('Temporada 1: 01/11/2025 – 30/04/2026')).toBeInTheDocument();
   });
 });

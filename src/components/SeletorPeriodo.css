@@ -38,3 +38,34 @@
     color: #f0a35e;
     font-size: 0.95rem;
 }
+
+.linha-seletor {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.periodo-escolhido {
+    flex-basis: 100%;
+    text-align: center;
+    margin: 0;
+    color: #e8f5e9;
+    font-weight: 600;
+}
+
+.botao-gerenciar {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #4a7c59;
+    background-color: #1b2e15;
+    color: #c8e6c9;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.botao-gerenciar:hover {
+    background-color: #4a7c59;
+    color: #ffffff;
+}

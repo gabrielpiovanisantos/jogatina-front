@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
-  limitesDoPeriodo, periodoValido, diasDoPeriodo, temFiltro, descreverPeriodo, periodoPersonalizado, jogadoresDoPeriodo
+  limitesDoPeriodo, periodoValido, diasDoPeriodo, temFiltro, descreverPeriodo, periodoPersonalizado, jogadoresDoPeriodo,
+  definirPeriodosSalvos, periodoSalvo, periodoSalvoDe, ehPeriodoSalvo, datasDoPeriodo
 } from '../utils/periodo.js';
 
 // Datas locais: os limites são calculados no fuso do usuário
@@ -77,5 +78,48 @@ describe('periodo utils', () => {
 
     expect(jogadoresDoPeriodo(jogadores, '3m')).toEqual([{ playerId: 1, totalGames: 3 }]);
     expect(jogadoresDoPeriodo(jogadores, 'tudo')).toEqual(jogadores);
+  });
+
+  describe('saved periods (temporadas)', () => {
+    const SALVOS = [
+      { id: 2, name: 'Temporada 2', from: new Date(2026, 3, 1).toISOString(), to: null },
+      { id: 1, name: 'Temporada 1', from: new Date(2025, 10, 1).toISOString(), to: new Date(2026, 3, 1).toISOString() }
+    ];
+
+    afterEach(() => definirPeriodosSalvos([]));
+
+    it('given registered saved periods when resolving "salvo:<id>" then uses their limits as instants', () => {
+      definirPeriodosSalvos(SALVOS);
+
+      expect(limitesDoPeriodo(periodoSalvo(1), hoje)).toEqual({ from: new Date(2025, 10, 1), to: new Date(2026, 3, 1) });
+      expect(limitesDoPeriodo('salvo:2', hoje)).toEqual({ from: new Date(2026, 3, 1), to: null });
+      expect(periodoValido('salvo:2')).toBe(true);
+      expect(temFiltro('salvo:2')).toBe(true);
+      expect(descreverPeriodo('salvo:1')).toBe('Temporada 1');
+    });
+
+    it('given an unknown or removed saved period when resolving then it is invalid and has no filter', () => {
+      definirPeriodosSalvos(SALVOS);
+
+      expect(ehPeriodoSalvo('salvo:99')).toBe(true);
+      expect(periodoSalvoDe('salvo:99')).toBeNull();
+      expect(periodoValido('salvo:99')).toBe(false);
+      expect(limitesDoPeriodo('salvo:99', hoje)).toEqual({ from: null, to: null });
+      expect(temFiltro('salvo:99')).toBe(false);
+    });
+
+    it('given the saved periods were not loaded yet when resolving then it is not valid yet', () => {
+      expect(periodoValido('salvo:1')).toBe(false);
+    });
+
+    it('given periods when showing their dates then the end is the day before "to", or "hoje" when open', () => {
+      definirPeriodosSalvos(SALVOS);
+
+      expect(datasDoPeriodo('salvo:1', hoje)).toBe('01/11/2025 – 31/03/2026');
+      expect(datasDoPeriodo('salvo:2', hoje)).toBe('01/04/2026 – hoje');
+      expect(datasDoPeriodo('3m', hoje)).toBe('26/07/2026 – hoje');
+      expect(datasDoPeriodo('2026-01-10_2026-03-31', hoje)).toBe('10/01/2026 – 31/03/2026');
+      expect(datasDoPeriodo('tudo', hoje)).toBe('');
+    });
   });
 });

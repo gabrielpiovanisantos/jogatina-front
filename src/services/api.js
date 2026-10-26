@@ -31,6 +31,45 @@ const consultaDoPeriodo = (periodo) => {
 // Erro com o status HTTP, para a tela distinguir um 404 dos demais erros
 const erroHttp = (status, mensagem) => Object.assign(new Error(mensagem), { status });
 
+// Períodos salvos no modo mock, com as mesmas regras do backend
+let periodosMock = [
+  { id: 1, name: 'Temporada 1', from: new Date(2025, 10, 1).toISOString(), to: new Date(2026, 3, 1).toISOString() },
+  { id: 2, name: 'Temporada 2', from: new Date(2026, 3, 1).toISOString(), to: null }
+];
+
+const validarPeriodoMock = ({ name, from, to }, idAtual) => {
+  const nome = String(name ?? '').trim();
+  if (!nome) return 'Nome do período não pode ser vazio';
+  if (nome.length > 100) return 'Nome do período pode ter no máximo 100 caracteres';
+  if (periodosMock.some(p => p.id !== idAtual && p.name.toLowerCase() === nome.toLowerCase())) {
+    return `Já existe um período com o nome: ${nome}`;
+  }
+  if (!from) return "'from' é obrigatório";
+  if (to && new Date(from) >= new Date(to)) return "'from' precisa ser anterior a 'to'";
+  return null;
+};
+
+const ordenarPeriodosMock = () => [...periodosMock]
+  .sort((a, b) => new Date(b.from) - new Date(a.from))
+  .map(p => ({ ...p }));
+
+// Envia um período salvo (POST/PUT) e devolve o objeto gravado
+const enviarPeriodo = async (url, method, periodo, acao) => {
+  const response = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: periodo.name, from: periodo.from, to: periodo.to ?? null })
+  });
+
+  if (!response.ok) {
+    // 400 traz a mensagem em text/plain; 404 vem sem corpo
+    const errorMsg = await response.text();
+    throw erroHttp(response.status, errorMsg || `Erro ${response.status} ao ${acao} período`);
+  }
+
+  return await response.json();
+};
+
 export const apiService = {
   /**
    * Organiza os jogadores em mesas de acordo com o algoritmo do backend
@@ -116,6 +155,110 @@ export const apiService = {
       return data;
     } catch (error) {
       console.error('Erro ao listar as facções oficiais:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lista os períodos salvos, compartilhados por todos
+   * @returns {Promise} [{ id, name, from, to }], com to null para um período em andamento,
+   * do início mais recente para o mais antigo
+   */
+  listarPeriodosSalvos: async () => {
+    if (USE_MOCK_DATA) {
+      console.info('[api] Usando dados estáticos (mock) em listarPeriodosSalvos');
+      await aguardar(150);
+      return ordenarPeriodosMock();
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/periods`, { method: 'GET' });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status} ao listar períodos salvos`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Erro ao listar períodos salvos:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Cria um período salvo
+   * @param {Object} periodo - { name, from, to } com from/to em ISO; to null ou ausente fica em aberto
+   * @returns {Promise} O período criado, com id
+   */
+  criarPeriodoSalvo: async (periodo) => {
+    if (USE_MOCK_DATA) {
+      console.info('[api] Usando dados estáticos (mock) em criarPeriodoSalvo', periodo);
+      await aguardar(150);
+      const erro = validarPeriodoMock(periodo, null);
+      if (erro) throw erroHttp(400, erro);
+      const novo = {
+        id: Math.max(0, ...periodosMock.map(p => p.id)) + 1,
+        name: periodo.name.trim(), from: periodo.from, to: periodo.to ?? null
+      };
+      periodosMock = [...periodosMock, novo];
+      return { ...novo };
+    }
+
+    try {
+      return await enviarPeriodo(`${API_BASE_URL}/api/periods`, 'POST', periodo, 'criar');
+    } catch (error) {
+      console.error('Erro ao criar período:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Substitui um período salvo (to ausente vira null)
+   * @param {Number} id - Id do período
+   * @param {Object} periodo - { name, from, to }
+   * @returns {Promise} O período atualizado
+   */
+  atualizarPeriodoSalvo: async (id, periodo) => {
+    if (USE_MOCK_DATA) {
+      console.info('[api] Usando dados estáticos (mock) em atualizarPeriodoSalvo', id, periodo);
+      await aguardar(150);
+      if (!periodosMock.some(p => p.id === id)) throw erroHttp(404, `Erro 404 ao atualizar período`);
+      const erro = validarPeriodoMock(periodo, id);
+      if (erro) throw erroHttp(400, erro);
+      const atualizado = { id, name: periodo.name.trim(), from: periodo.from, to: periodo.to ?? null };
+      periodosMock = periodosMock.map(p => (p.id === id ? atualizado : p));
+      return { ...atualizado };
+    }
+
+    try {
+      return await enviarPeriodo(`${API_BASE_URL}/api/periods/${id}`, 'PUT', periodo, 'atualizar');
+    } catch (error) {
+      console.error('Erro ao atualizar período:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Exclui um período salvo
+   * @param {Number} id - Id do período
+   */
+  excluirPeriodoSalvo: async (id) => {
+    if (USE_MOCK_DATA) {
+      console.info('[api] Usando dados estáticos (mock) em excluirPeriodoSalvo', id);
+      await aguardar(150);
+      if (!periodosMock.some(p => p.id === id)) throw erroHttp(404, `Erro 404 ao excluir período`);
+      periodosMock = periodosMock.filter(p => p.id !== id);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/periods/${id}`, { method: 'DELETE' });
+
+      if (!response.ok) {
+        throw erroHttp(response.status, `Erro ${response.status} ao excluir período`);
+      }
+    } catch (error) {
+      console.error('Erro ao excluir período:', error);
       throw error;
     }
   },
