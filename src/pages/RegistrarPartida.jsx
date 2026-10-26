@@ -3,42 +3,39 @@ import apiService from '../services/api.js';
 import './RegistrarPartida.css';
 import { paraAAAAMMDD, formatarDataBR, intervaloDoDia, dataComHoraAtual } from '../utils/datas.js';
 
-// Nomes do manual brasileiro "As Leis de Root". São gravados como estão no
-// backend, que agrupa as partidas por esse texto.
-const FACCOES_ROOT = [
-    'Marqueses',
-    'Dinastia das Rapinas',
-    'Aliança da Floresta',
-    'Malandro',
-    'Lagartos Cultistas',
-    'Companhia Ribeirinha',
-    'Ducado Subterrâneo',
-    'Conspiração Corvídea',
-    'Senhor das Centenas',
-    'Guardiões de Ferro'
-];
-
 export default function RegistrarPartida() {
     // Jogadores cadastrados no backend (cadastrados ao organizar mesas)
     const [jogadores, setJogadores] = useState([]);
+    // Lista oficial de facções, a mesma que o backend usa para validar a partida.
+    // Não há lista fixa de reserva: se ela não carregar, a partida não pode ser registrada.
+    const [faccoes, setFaccoes] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState(null);
 
     useEffect(() => {
-        const buscarJogadores = async () => {
+        const buscarDados = async () => {
             try {
                 setCarregando(true);
                 setErro(null);
-                setJogadores(await apiService.listarJogadores());
+                const [listaJogadores, listaFaccoes] = await Promise.all([
+                    apiService.listarJogadores().catch(error => {
+                        throw new Error(`Erro ao carregar jogadores: ${error.message}`);
+                    }),
+                    apiService.listarFaccoesOficiais().catch(error => {
+                        throw new Error(`Erro ao carregar facções: ${error.message}`);
+                    })
+                ]);
+                setJogadores(listaJogadores);
+                setFaccoes(listaFaccoes);
             } catch (error) {
-                setErro(`Erro ao carregar jogadores: ${error.message}`);
+                setErro(error.message);
                 console.error(error);
             } finally {
                 setCarregando(false);
             }
         };
 
-        buscarJogadores();
+        buscarDados();
     }, []);
 
     // Dia da partida (AAAA-MM-DD) e o número dela entre as partidas desse dia
@@ -117,7 +114,7 @@ export default function RegistrarPartida() {
     };
 
     if (carregando) {
-        return <div className="cartao-partida">⏳ Carregando jogadores...</div>;
+        return <div className="cartao-partida">⏳ Carregando jogadores e facções...</div>;
     }
 
     if (erro) {
@@ -178,7 +175,7 @@ export default function RegistrarPartida() {
                                 onChange={(e) => atualizarCampo(index, 'faction', e.target.value)}
                             >
                                 <option value="">Selecione a Facção</option>
-                                {FACCOES_ROOT.map(f => (
+                                {faccoes.map(f => (
                                     <option key={f} value={f}>{f}</option>
                                 ))}
                             </select>

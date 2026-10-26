@@ -1,5 +1,5 @@
 // Serviço centralizado para chamadas à API
-import { MOCK_PLAYERS, MOCK_RANKING, MOCK_FACCOES, desempenhoFaccaoMock, faccoesDoJogadorMock, gerarMesasMock } from './mockData.js';
+import { MOCK_PLAYERS, MOCK_RANKING, MOCK_FACCOES, MOCK_FACCOES_OFICIAIS, desempenhoFaccaoMock, faccoesDoJogadorMock, gerarMesasMock } from './mockData.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?
   (import.meta.env.VITE_API_URL === '/' ? '' : import.meta.env.VITE_API_URL) :
@@ -73,6 +73,34 @@ export const apiService = {
       return data;
     } catch (error) {
       console.error('Erro ao listar jogadores:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lista as facções aceitas pelo backend (a lista oficial)
+   * @returns {Promise} Nomes das facções, na ordem oficial
+   */
+  listarFaccoesOficiais: async () => {
+    if (USE_MOCK_DATA) {
+      console.info('[api] Usando dados estáticos (mock) em listarFaccoesOficiais');
+      await aguardar();
+      return [...MOCK_FACCOES_OFICIAIS];
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/factions`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status} ao listar as facções oficiais`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Erro ao listar as facções oficiais:', error);
       throw error;
     }
   },
@@ -209,6 +237,14 @@ export const apiService = {
     if (USE_MOCK_DATA) {
       console.info('[api] Usando dados estáticos (mock) em registrarPartida', payload);
       await aguardar();
+      // Mesma validação do backend: ignora maiúsculas e espaços nas pontas, acentos contam
+      const oficiais = MOCK_FACCOES_OFICIAIS.map(f => f.toLowerCase());
+      const invalidas = payload.results
+        .map(r => String(r.faction).trim())
+        .filter(f => !oficiais.includes(f.toLowerCase()));
+      if (invalidas.length > 0) {
+        throw new Error(`Facção inválida: ${invalidas.join(', ')}`);
+      }
       partidasMock.push({ id: partidasMock.length + 1, dateTime: payload.dateTime });
       return { success: true, message: 'Partida registrada (mock)' };
     }

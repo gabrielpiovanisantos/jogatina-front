@@ -9,10 +9,25 @@ import { paraAAAAMMDD, formatarDataBR } from '../utils/datas.js';
 vi.mock('../services/api.js', () => ({
   default: {
     listarJogadores: vi.fn(),
+    listarFaccoesOficiais: vi.fn(),
     registrarPartida: vi.fn(),
     listarPartidas: vi.fn()
   }
 }));
+
+// Mesmo conteúdo de GET /api/factions
+const FACCOES_OFICIAIS = [
+  'Marqueses',
+  'Dinastia das Rapinas',
+  'Aliança da Floresta',
+  'Malandro',
+  'Lagartos Cultistas',
+  'Companhia Ribeirinha',
+  'Ducado Subterrâneo',
+  'Conspiração Corvídea',
+  'Senhor das Centenas',
+  'Guardiões de Ferro'
+];
 
 const JOGADORES = [
   { id: 11, name: 'Ana' },
@@ -26,6 +41,7 @@ describe('RegistrarPartida component', () => {
     vi.spyOn(window, 'alert').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
     apiService.listarPartidas.mockResolvedValue([]);
+    apiService.listarFaccoesOficiais.mockResolvedValue(FACCOES_OFICIAIS);
   });
 
   afterEach(() => {
@@ -42,27 +58,65 @@ describe('RegistrarPartida component', () => {
     expect(nomes).toEqual(['Selecione o Jogador', 'Ana', 'Bruno', 'Carla']);
   });
 
-  it('given the form when rendering then lists the factions with the Brazilian manual names in order', async () => {
+  it('given the official factions from the backend when rendering then lists them in the faction select in that order', async () => {
     apiService.listarJogadores.mockResolvedValue(JOGADORES);
 
     render(<RegistrarPartida />);
 
     await screen.findByLabelText('Jogador 1');
+    expect(apiService.listarFaccoesOficiais).toHaveBeenCalledTimes(1);
     const select = screen.getByDisplayValue('Selecione a Facção');
     const nomes = Array.from(select.options).map(o => o.textContent);
-    expect(nomes).toEqual([
-      'Selecione a Facção',
-      'Marqueses',
-      'Dinastia das Rapinas',
-      'Aliança da Floresta',
-      'Malandro',
-      'Lagartos Cultistas',
-      'Companhia Ribeirinha',
-      'Ducado Subterrâneo',
-      'Conspiração Corvídea',
-      'Senhor das Centenas',
-      'Guardiões de Ferro'
-    ]);
+    expect(nomes).toEqual(['Selecione a Facção', ...FACCOES_OFICIAIS]);
+  });
+
+  it('given a different official list when rendering then shows exactly what the backend sent', async () => {
+    apiService.listarJogadores.mockResolvedValue(JOGADORES);
+    apiService.listarFaccoesOficiais.mockResolvedValue(['Malandro', 'Marqueses']);
+
+    render(<RegistrarPartida />);
+
+    await screen.findByLabelText('Jogador 1');
+    const nomes = Array.from(screen.getByDisplayValue('Selecione a Facção').options).map(o => o.textContent);
+    expect(nomes).toEqual(['Selecione a Facção', 'Malandro', 'Marqueses']);
+  });
+
+  it('given a pending factions request when rendering then shows the loading message', async () => {
+    apiService.listarJogadores.mockResolvedValue(JOGADORES);
+    apiService.listarFaccoesOficiais.mockImplementation(() => new Promise(() => {}));
+
+    render(<RegistrarPartida />);
+
+    expect(await screen.findByText(/⏳ Carregando jogadores e facções/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Jogador 1')).not.toBeInTheDocument();
+  });
+
+  it('given a failed request when loading factions then shows the error and no form', async () => {
+    apiService.listarJogadores.mockResolvedValue(JOGADORES);
+    apiService.listarFaccoesOficiais.mockRejectedValue(new Error('Erro 500 ao listar as facções oficiais'));
+
+    render(<RegistrarPartida />);
+
+    expect(await screen.findByText(/⚠️ Erro ao carregar facções: Erro 500/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Salvar Partida/i })).not.toBeInTheDocument();
+  });
+
+  it('given the backend rejects an invalid faction with 400 when saving then alerts the message and keeps the form', async () => {
+    const user = userEvent.setup();
+    apiService.listarJogadores.mockResolvedValue(JOGADORES);
+    // A lista na tela pode estar desatualizada em relação à do backend
+    apiService.listarFaccoesOficiais.mockResolvedValue(['Stark', ...FACCOES_OFICIAIS]);
+    apiService.registrarPartida.mockRejectedValue(new Error('Facção inválida: Stark'));
+
+    render(<RegistrarPartida />);
+
+    await user.selectOptions(await screen.findByLabelText('Jogador 1'), 'Ana');
+    await user.selectOptions(screen.getByDisplayValue('Selecione a Facção'), 'Stark');
+    await user.click(screen.getByRole('button', { name: /Salvar Partida/i }));
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('⚠️ Falha ao registrar partida: Facção inválida: Stark'));
+    expect(screen.getByLabelText('Jogador 1')).toHaveDisplayValue('Ana');
+    expect(screen.getByDisplayValue('Stark')).toBeInTheDocument();
   });
 
   it('given a selected player when saving the game then sends the real player id', async () => {

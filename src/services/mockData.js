@@ -28,6 +28,21 @@ export const MOCK_RANKING = [
   { playerId: 7, playerName: 'Bruno', totalScore: 15, totalGames: 7, totalVictories: 1, differentFactions: 2 }
 ];
 
+// Mesmo formato de GET /api/factions: a lista oficial, na ordem do manual
+// brasileiro "As Leis de Root".
+export const MOCK_FACCOES_OFICIAIS = [
+  'Marqueses',
+  'Dinastia das Rapinas',
+  'Aliança da Floresta',
+  'Malandro',
+  'Lagartos Cultistas',
+  'Companhia Ribeirinha',
+  'Ducado Subterrâneo',
+  'Conspiração Corvídea',
+  'Senhor das Centenas',
+  'Guardiões de Ferro'
+];
+
 // Mesmo formato de GET /dashboard/factions, já ordenado como o backend faria:
 // winPercentage, totalVictories e totalGames decrescentes, depois o nome.
 export const MOCK_FACCOES = [

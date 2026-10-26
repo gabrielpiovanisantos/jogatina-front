@@ -232,6 +232,27 @@ describe('API Service', () => {
     });
   });
 
+  describe('listarFaccoesOficiais', () => {
+    it('given the official list when listing it then sends a GET to /api/factions and returns the names in order', async () => {
+      const nomes = ['Marqueses', 'Dinastia das Rapinas', 'Aliança da Floresta'];
+      globalThis.fetch.mockResolvedValueOnce({ ok: true, json: async () => nomes });
+
+      const resultado = await apiService.listarFaccoesOficiais();
+
+      const [url, opcoes] = globalThis.fetch.mock.calls[0];
+      expect(new URL(url, 'http://base').pathname).toBe('/api/factions');
+      expect(opcoes).toEqual(expect.objectContaining({ method: 'GET' }));
+      expect(resultado).toEqual(nomes);
+    });
+
+    it('given an error response when listing the official factions then throws', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 500 });
+
+      await expect(apiService.listarFaccoesOficiais()).rejects.toThrow('Erro 500 ao listar as facções oficiais');
+    });
+  });
+
   describe('listarFaccoes', () => {
     it('given faction results when listing factions then sends a GET to /dashboard/factions and returns them', async () => {
       const faccoes = [
@@ -350,6 +371,16 @@ describe('API Service', () => {
       });
 
       await expect(apiService.registrarPartida(payload)).rejects.toThrow('Jogador repetido na mesma partida');
+    });
+
+    it.each([
+      'Facção inválida: Stark',
+      'Facção inválida: Stark, Lannister'
+    ])('given the backend rejects with 400 "%s" when registering then throws with that message', async (mensagem) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 400, text: async () => mensagem });
+
+      await expect(apiService.registrarPartida(payload)).rejects.toThrow(mensagem);
     });
 
     it('given an error response without a body when registering then throws with the status', async () => {
