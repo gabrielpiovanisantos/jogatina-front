@@ -9,6 +9,7 @@
 
 .navbar {
   background-color: #2196F3;
+  border-radius: 12px;
   padding: 15px 20px;
   display: flex;
   gap: 15px;
