@@ -71,6 +71,39 @@ const enviarPeriodo = async (url, method, periodo, acao) => {
   return await response.json();
 };
 
+
+// Mesas compartilhadas no modo mock: só vivem nesta aba (não dá para testar o
+// compartilhamento entre navegadores sem o backend).
+const mesasMock = new Map();
+let proximoJogadorMock = 1;
+
+const copiaMesaMock = (mesa) => ({ ...mesa, players: mesa.players.map(p => ({ ...p })) });
+
+const mesaMockOu404 = (id) => {
+  const mesa = mesasMock.get(id);
+  if (!mesa) throw erroHttp(404, 'Mesa não encontrada');
+  return mesa;
+};
+
+// Chamada às mesas compartilhadas (/api/setup/tables): 400 traz a mensagem em
+// text/plain e 404 vem sem corpo; o erro leva o status para a tela distinguir.
+const chamarMesa = async (caminho, method = 'GET', corpo) => {
+  const response = await fetch(`${API_BASE_URL}/api/setup/tables${caminho}`, {
+    method,
+    ...(corpo !== undefined && {
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corpo)
+    })
+  });
+
+  if (!response.ok) {
+    const errorMsg = response.status === 404 ? 'Mesa não encontrada' : await response.text();
+    throw erroHttp(response.status, errorMsg || `Erro ${response.status} na mesa`);
+  }
+
+  return await response.json();
+};
+
 export const apiService = {
   /**
    * Organiza os jogadores em mesas de acordo com o algoritmo do backend
@@ -102,6 +135,65 @@ export const apiService = {
       console.error('Erro ao organizar mesas:', error);
       throw error;
     }
+  },
+
+  /**
+   * Cria uma mesa compartilhada; o id vai no link (#setup/<id>) para outras
+   * pessoas adicionarem os nomes.
+   * @param {{ data: string, jogo: string, quantidade: number }} dados - data em "AAAA-MM-DD"
+   * @returns {Promise} { id, date, game, expectedPlayers, players: [] }
+   */
+  criarMesa: async ({ data, jogo, quantidade }) => {
+    if (USE_MOCK_DATA) {
+      await aguardar();
+      const id = Math.random().toString(36).slice(2, 12);
+      mesasMock.set(id, { id, date: data, game: jogo, expectedPlayers: quantidade, players: [] });
+      return copiaMesaMock(mesasMock.get(id));
+    }
+    return chamarMesa('', 'POST', { date: data, game: jogo, expectedPlayers: quantidade });
+  },
+
+  /** Mesa compartilhada pelo id, com os nomes já adicionados (erro com status 404 se não existe) */
+  obterMesa: async (id) => {
+    if (USE_MOCK_DATA) return copiaMesaMock(mesaMockOu404(id));
+    return chamarMesa(`/${encodeURIComponent(id)}`);
+  },
+
+  /** Adiciona um nome à mesa e devolve a mesa atualizada */
+  adicionarJogadorNaMesa: async (id, nome) => {
+    if (USE_MOCK_DATA) {
+      await aguardar(150);
+      const mesa = mesaMockOu404(id);
+      const limpo = nome.trim();
+      if (mesa.players.some(p => p.name.toLowerCase() === limpo.toLowerCase())) {
+        throw erroHttp(400, 'Esse jogador já está na lista!');
+      }
+      mesa.players.push({ id: proximoJogadorMock++, name: limpo });
+      return copiaMesaMock(mesa);
+    }
+    return chamarMesa(`/${encodeURIComponent(id)}/players`, 'POST', { name: nome });
+  },
+
+  /** Remove um nome da mesa (pelo id que veio da mesa) e devolve a mesa atualizada */
+  removerJogadorDaMesa: async (id, jogadorId) => {
+    if (USE_MOCK_DATA) {
+      await aguardar(150);
+      const mesa = mesaMockOu404(id);
+      mesa.players = mesa.players.filter(p => p.id !== jogadorId);
+      return copiaMesaMock(mesa);
+    }
+    return chamarMesa(`/${encodeURIComponent(id)}/players/${jogadorId}`, 'DELETE');
+  },
+
+  /** Organiza os nomes da mesa compartilhada em mesas de jogo: { groups } */
+  organizarMesaCompartilhada: async (id) => {
+    if (USE_MOCK_DATA) {
+      await aguardar();
+      const mesa = mesaMockOu404(id);
+      if (mesa.players.length < 3) throw erroHttp(400, 'É necessário pelo menos 3 jogadores para organizar mesas');
+      return { groups: gerarMesasMock(mesa.players) };
+    }
+    return chamarMesa(`/${encodeURIComponent(id)}/organize`, 'POST');
   },
 
   /**

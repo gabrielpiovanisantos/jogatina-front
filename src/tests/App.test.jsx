@@ -14,7 +14,9 @@ vi.mock('../services/api.js', () => ({
     listarPeriodosSalvos: vi.fn(),
     criarPeriodoSalvo: vi.fn(),
     atualizarPeriodoSalvo: vi.fn(),
-    excluirPeriodoSalvo: vi.fn()
+    excluirPeriodoSalvo: vi.fn(),
+    criarMesa: vi.fn(),
+    obterMesa: vi.fn()
   }
 }));
 
@@ -557,5 +559,55 @@ describe('App temporadas', () => {
     await screen.findByRole('button', { name: 'Ana' });
     expect(apiService.default.obterRanking.mock.calls.length).toBeGreaterThan(chamadasAntes);
     expect(screen.getByText('Temporada 1: 01/11/2025 – 30/04/2026')).toBeInTheDocument();
+  });
+});
+
+describe('App shared table', () => {
+  const MESA = { id: 'abc234defg', date: '2099-08-15', game: 'Root', expectedPlayers: 6, players: [{ id: 1, name: 'Ana' }] };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    apiService.default.listarPeriodosSalvos.mockResolvedValue([]);
+    apiService.default.criarMesa.mockResolvedValue({ ...MESA, players: [] });
+    apiService.default.obterMesa.mockResolvedValue(MESA);
+  });
+
+  it('given a new table when confirming it then creates it and puts its id in the url', async () => {
+    window.history.replaceState(null, '', '#criar');
+    const { container } = render(<App />);
+
+    fireEvent.change(container.querySelector('#data'), { target: { value: '2099-08-15' } });
+    fireEvent.change(screen.getByLabelText(/Qual Jogo/i), { target: { value: 'Root' } });
+    fireEvent.change(screen.getByLabelText(/Quantidade de Pessoas/i), { target: { value: '6' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    await userEvent.click(screen.getByRole('button', { name: /Confirmar e Continuar/i }));
+
+    expect(apiService.default.criarMesa).toHaveBeenCalledWith({ data: '2099-08-15', jogo: 'Root', quantidade: 6 });
+    expect(await screen.findByPlaceholderText(/Nome do jogador/i)).toBeInTheDocument();
+    expect(window.location.hash).toBe('#setup/abc234defg');
+  });
+
+  it('given a shared table link when opening it then shows that table with the names already added', async () => {
+    window.history.replaceState(null, '', '#setup/abc234defg');
+    render(<App />);
+
+    expect(await screen.findByText('Ana')).toBeInTheDocument();
+    expect(apiService.default.obterMesa).toHaveBeenCalledWith('abc234defg');
+    expect(window.location.hash).toBe('#setup/abc234defg');
+  });
+
+  it('given the table cannot be created when confirming then stays on the summary with the error', async () => {
+    apiService.default.criarMesa.mockRejectedValue(new Error('Erro 500'));
+    window.history.replaceState(null, '', '#criar');
+    const { container } = render(<App />);
+
+    fireEvent.change(container.querySelector('#data'), { target: { value: '2099-08-15' } });
+    fireEvent.change(screen.getByLabelText(/Qual Jogo/i), { target: { value: 'Root' } });
+    fireEvent.change(screen.getByLabelText(/Quantidade de Pessoas/i), { target: { value: '6' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    await userEvent.click(screen.getByRole('button', { name: /Confirmar e Continuar/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível criar a mesa: Erro 500');
+    expect(window.location.hash).toBe('#criar');
   });
 });

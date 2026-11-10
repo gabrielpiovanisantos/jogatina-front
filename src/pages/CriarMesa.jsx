@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import './CriarMesa.css';
 import { paraAAAAMMDD, formatarDataBR } from '../utils/datas.js';
+import apiService from '../services/api.js';
 
 export default function CriarMesa({ onContinuar }) {
     const [data, setData] = useState('');
     const [jogo, setJogo] = useState('');
     const [quantidade, setQuantidade] = useState('');
     const [mostraResumo, setMostraResumo] = useState(false);
+    const [criando, setCriando] = useState(false);
+    const [erro, setErro] = useState(null);
 
     const obterDataMinima = () => {
         return paraAAAAMMDD(new Date());
@@ -28,8 +31,18 @@ export default function CriarMesa({ onContinuar }) {
         setMostraResumo(true);
     };
 
-    const handleConfirmar = () => {
-        onContinuar({ data, jogo, quantidade: parseInt(quantidade) });
+    // A mesa nasce no backend para ganhar um id: é ele que vai no link
+    // compartilhado (#setup/<id>) para os outros adicionarem os nomes.
+    const handleConfirmar = async () => {
+        setCriando(true);
+        setErro(null);
+        try {
+            const mesa = await apiService.criarMesa({ data, jogo, quantidade: parseInt(quantidade) });
+            onContinuar(mesa.id);
+        } catch (error) {
+            setErro(`Não foi possível criar a mesa: ${error.message}`);
+            setCriando(false);
+        }
     };
 
     const handleVoltar = () => {
@@ -103,12 +116,14 @@ export default function CriarMesa({ onContinuar }) {
                         </div>
                     </div>
 
+                    {erro && <div className="erro-criar-mesa" role="alert">⚠️ {erro}</div>}
+
                     <div className="botoes-resumo">
-                        <button onClick={handleVoltar} className="btn-voltar-resumo">
+                        <button onClick={handleVoltar} className="btn-voltar-resumo" disabled={criando}>
                             ← Voltar
                         </button>
-                        <button onClick={handleConfirmar} className="btn-confirmar-resumo">
-                            Confirmar e Continuar
+                        <button onClick={handleConfirmar} className="btn-confirmar-resumo" disabled={criando}>
+                            {criando ? '⏳ Criando...' : 'Confirmar e Continuar'}
                         </button>
                     </div>
                 </>

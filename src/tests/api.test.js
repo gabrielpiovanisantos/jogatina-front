@@ -92,6 +92,54 @@ describe('API Service', () => {
     });
   });
 
+  describe('mesa compartilhada', () => {
+    const MESA = { id: 'abc234defg', date: '2026-08-15', game: 'Root', expectedPlayers: 6, players: [] };
+    const ok = (corpo) => ({ ok: true, json: async () => corpo });
+
+    it('given the table data when creating it then POSTs date, game and expected players to /api/setup/tables', async () => {
+      globalThis.fetch.mockResolvedValueOnce(ok(MESA));
+
+      const mesa = await apiService.criarMesa({ data: '2026-08-15', jogo: 'Root', quantidade: 6 });
+
+      expect(mesa).toEqual(MESA);
+      const [url, opcoes] = globalThis.fetch.mock.calls[0];
+      expect(url).toMatch(/\/api\/setup\/tables$/);
+      expect(opcoes.method).toBe('POST');
+      expect(JSON.parse(opcoes.body)).toEqual({ date: '2026-08-15', game: 'Root', expectedPlayers: 6 });
+    });
+
+    it('given a table id when reading, adding, removing and organizing then calls its urls', async () => {
+      globalThis.fetch.mockResolvedValue(ok(MESA));
+
+      await apiService.obterMesa('abc234defg');
+      await apiService.adicionarJogadorNaMesa('abc234defg', 'Ana');
+      await apiService.removerJogadorDaMesa('abc234defg', 7);
+      await apiService.organizarMesaCompartilhada('abc234defg');
+
+      const chamadas = globalThis.fetch.mock.calls.map(([url, opcoes]) => [url.replace(/^.*\/api/, '/api'), opcoes.method]);
+      expect(chamadas).toEqual([
+        ['/api/setup/tables/abc234defg', 'GET'],
+        ['/api/setup/tables/abc234defg/players', 'POST'],
+        ['/api/setup/tables/abc234defg/players/7', 'DELETE'],
+        ['/api/setup/tables/abc234defg/organize', 'POST']
+      ]);
+      expect(JSON.parse(globalThis.fetch.mock.calls[1][1].body)).toEqual({ name: 'Ana' });
+    });
+
+    it('given a 400 when adding a name then throws the backend message with the status', async () => {
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 400, text: async () => 'Esse jogador já está na lista!' });
+
+      await expect(apiService.adicionarJogadorNaMesa('abc234defg', 'Ana'))
+        .rejects.toMatchObject({ status: 400, message: 'Esse jogador já está na lista!' });
+    });
+
+    it('given an unknown table when reading it then throws with status 404', async () => {
+      globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 404, text: async () => '' });
+
+      await expect(apiService.obterMesa('naoexiste')).rejects.toMatchObject({ status: 404, message: 'Mesa não encontrada' });
+    });
+  });
+
   describe('listarPartidas', () => {
     it('given a range when listing games then sends a GET to /api/games with from and to as ISO instants', async () => {
       const partidas = [{ id: 4, dateTime: '2026-10-19T18:00:00Z' }];

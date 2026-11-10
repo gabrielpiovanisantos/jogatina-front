@@ -1,10 +1,66 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import './SetupMesa.css'; // Importando nosso novo arquivo de estilos!
 import apiService from '../services/api.js';
 import { MOCK_PLAYER_NAMES } from '../services/mockData.js';
+import { formatarDataBR } from '../utils/datas.js';
 
-export default function SetupMesa({ dadosMesa, onVoltar }) {
-    const [jogadoresConfirmados, setJogadoresConfirmados] = useState([]);
+// De quanto em quanto tempo a tela busca a mesa de novo, para ver os nomes
+// que outras pessoas adicionaram pelo link compartilhado.
+export const INTERVALO_ATUALIZACAO_MS = 3000;
+
+const linkDaMesa = (mesaId) =>
+    `${window.location.origin}${window.location.pathname}#setup/${encodeURIComponent(mesaId)}`;
+
+export default function SetupMesa({ mesaId, onVoltar }) {
+    // Mesa do backend: { id, date, game, expectedPlayers, players: [{ id, name }] }
+    const [mesa, setMesa] = useState(null);
+    const [naoEncontrada, setNaoEncontrada] = useState(false);
+    const [erroCarregar, setErroCarregar] = useState(null);
+    const [linkCopiado, setLinkCopiado] = useState(false);
+    const [enviando, setEnviando] = useState(false);
+    const jogadoresConfirmados = mesa?.players ?? [];
+
+    // Cada mesa recebida (busca periódica ou resposta de uma alteração) ganha um
+    // número; uma busca que começou antes de outra resposta chegar está velha e
+    // é descartada, para não "desfazer" na tela um nome recém-adicionado.
+    const versao = useRef(0);
+
+    const aplicarMesa = useCallback((novaMesa) => {
+        versao.current += 1;
+        setMesa(novaMesa);
+        setErroCarregar(null);
+    }, []);
+
+    const buscarMesa = useCallback(async () => {
+        const versaoNoInicio = versao.current;
+        try {
+            const atual = await apiService.obterMesa(mesaId);
+            if (versao.current === versaoNoInicio) aplicarMesa(atual);
+        } catch (error) {
+            if (error.status === 404) setNaoEncontrada(true);
+            else setErroCarregar(`Não foi possível atualizar a mesa: ${error.message}`);
+        }
+    }, [mesaId, aplicarMesa]);
+
+    useEffect(() => {
+        const carregar = async () => { await buscarMesa(); };
+        carregar();
+        const intervalo = setInterval(() => {
+            if (!document.hidden) buscarMesa();
+        }, INTERVALO_ATUALIZACAO_MS);
+        return () => clearInterval(intervalo);
+    }, [buscarMesa]);
+
+    const copiarLink = async () => {
+        try {
+            await navigator.clipboard.writeText(linkDaMesa(mesaId));
+            setLinkCopiado(true);
+            setTimeout(() => setLinkCopiado(false), 2000);
+        } catch {
+            // Sem acesso à área de transferência (http, permissão): o link está no campo para copiar à mão
+            setLinkCopiado(false);
+        }
+    };
     // Sempre usar lista mock para autocomplete (não há endpoint específico)
     // O backend será chamado apenas quando organizar as mesas
     const listaOficialJogadores = MOCK_PLAYER_NAMES;
@@ -54,11 +110,15 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
         }
     };
 
-    const adicionarJogador = (e) => {
+    const [mesasOrganizadas, setMesasOrganizadas] = useState(null);
+    const [carregando, setCarregando] = useState(false);
+    const [erro, setErro] = useState(null);
+
+    const adicionarJogador = async (e) => {
         if (e) e.preventDefault();
 
         const nomeLimpo = nomeDigitado.trim();
-        if (!nomeLimpo) return;
+        if (!nomeLimpo || enviando) return;
 
         const jaExiste = jogadoresConfirmados.find(j => j.name.toLowerCase() === nomeLimpo.toLowerCase());
         if (jaExiste) {
@@ -66,21 +126,30 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
             return;
         }
 
-        const novoJogador = { id: Date.now(), name: nomeLimpo };
-
-        setJogadoresConfirmados([...jogadoresConfirmados, novoJogador]);
-        setNomeDigitado('');
-        setMostrarSugestoes(false);
-        setIndiceDestacado(-1);
+        setEnviando(true);
+        setErro(null);
+        try {
+            aplicarMesa(await apiService.adicionarJogadorNaMesa(mesaId, nomeLimpo));
+            setNomeDigitado('');
+            setMostrarSugestoes(false);
+            setIndiceDestacado(-1);
+        } catch (error) {
+            // Ex.: outra pessoa adicionou o mesmo nome um instante antes
+            setErro(error.message);
+            buscarMesa();
+        } finally {
+            setEnviando(false);
+        }
     };
 
-    const removerJogador = (idParaRemover) => {
-        setJogadoresConfirmados(jogadoresConfirmados.filter(j => j.id !== idParaRemover));
+    const removerJogador = async (idParaRemover) => {
+        setErro(null);
+        try {
+            aplicarMesa(await apiService.removerJogadorDaMesa(mesaId, idParaRemover));
+        } catch (error) {
+            setErro(error.message);
+        }
     };
-
-    const [mesasOrganizadas, setMesasOrganizadas] = useState(null);
-    const [carregando, setCarregando] = useState(false);
-    const [erro, setErro] = useState(null);
 
     const confirmarLista = async () => {
         if (jogadoresConfirmados.length < 3) {
@@ -92,12 +161,7 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
         setErro(null);
 
         try {
-            const dados = await apiService.organizarMesas(
-                jogadoresConfirmados.map(j => ({
-                    id: j.id,
-                    name: j.name
-                }))
-            );
+            const dados = await apiService.organizarMesaCompartilhada(mesaId);
             setMesasOrganizadas(dados.groups);
         } catch (error) {
             setErro(`⚠️ Falha ao conectar com o servidor: ${error.message}`);
@@ -112,6 +176,28 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
         setErro(null);
     };
 
+    if (naoEncontrada) {
+        return (
+            <div className="cartao-setup">
+                <h2>Mesa não encontrada</h2>
+                <p>O link pode estar errado ou incompleto. Peça o link de novo a quem criou a mesa.</p>
+                {onVoltar && (
+                    <button onClick={onVoltar} className="btn-voltar">
+                        ← Criar uma mesa
+                    </button>
+                )}
+            </div>
+        );
+    }
+
+    if (!mesa) {
+        return (
+            <div className="cartao-setup">
+                {erroCarregar ? <p role="alert">⚠️ {erroCarregar}</p> : <p>⏳ Carregando mesa...</p>}
+            </div>
+        );
+    }
+
     return (
             <div className="cartao-setup">
                 {onVoltar && (
@@ -119,12 +205,28 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
                         ← Voltar
                     </button>
                 )}
-                
-                {dadosMesa && (
-                    <div className="info-mesa">
-                        <p>📅 <strong>{dadosMesa.data}</strong> | 🎲 <strong>{dadosMesa.jogo}</strong> | 👥 <strong>{dadosMesa.quantidade} pessoas</strong></p>
+
+                <div className="info-mesa">
+                    <p>📅 <strong>{formatarDataBR(mesa.date)}</strong> | 🎲 <strong>{mesa.game}</strong> | 👥 <strong>{mesa.expectedPlayers} pessoas</strong></p>
+                </div>
+
+                <div className="compartilhar-mesa">
+                    <label htmlFor="link-mesa">Envie este link para os outros colocarem o nome:</label>
+                    <div className="compartilhar-linha">
+                        <input
+                            id="link-mesa"
+                            type="text"
+                            readOnly
+                            value={linkDaMesa(mesaId)}
+                            onFocus={(e) => e.target.select()}
+                        />
+                        <button type="button" onClick={copiarLink} className="btn-copiar-link">
+                            {linkCopiado ? '✓ Copiado' : '📋 Copiar link'}
+                        </button>
                     </div>
-                )}
+                </div>
+
+                {erroCarregar && <div className="aviso-atualizacao" role="status">⚠️ {erroCarregar}</div>}
                 
                 {!mesasOrganizadas ? (
                     <>
@@ -169,7 +271,7 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
                             <button
                                 type="submit"
                                 className="btn-adicionar"
-                                disabled={!nomeDigitado.trim()}
+                                disabled={!nomeDigitado.trim() || enviando}
                             >
                                 +
                             </button>
@@ -264,4 +366,4 @@ export default function SetupMesa({ dadosMesa, onVoltar }) {
                 )}
             </div>
     );
-}
+}

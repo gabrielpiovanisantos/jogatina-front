@@ -15,8 +15,8 @@ import {
 import { PeriodosContexto } from "./utils/periodosContexto.js";
 
 // Telas que podem ser abertas direto pela URL (#partida, #ranking...), o que
-// mantém a tela atual ao dar F5. 'setup' fica de fora porque depende dos
-// dados da mesa, que se perdem no reload.
+// mantém a tela atual ao dar F5. 'setup' fica de fora porque precisa do id da
+// mesa: ela abre por #setup/<id> (veja PREFIXO_SETUP).
 const TELAS_DA_URL = ['criar', 'partida', 'ranking', 'jogadores', 'faccoes', 'temporadas'];
 
 // Rotas antigas que continuam funcionando em links e favoritos: #dashboard
@@ -25,6 +25,10 @@ const ROTAS_ANTIGAS = { dashboard: 'jogadores' };
 
 // O detalhe de uma facção fica em #faccao/<nome>, para também sobreviver ao F5.
 const PREFIXO_FACCAO = 'faccao/';
+
+// A mesa em montagem fica em #setup/<id>: o link é compartilhado para outras
+// pessoas abrirem a mesma mesa e adicionarem os próprios nomes.
+const PREFIXO_SETUP = 'setup/';
 
 // Telas dos dashboards: compartilham o período, que vai no hash como
 // "?periodo=3m" (veja utils/periodo.js). "Tudo", o padrão, fica fora da URL.
@@ -62,15 +66,26 @@ const faccaoDaUrl = () => {
     }
 };
 
+const mesaDaUrl = () => {
+    const hash = rotaDaUrl();
+    if (!hash.startsWith(PREFIXO_SETUP)) return null;
+    try {
+        return decodeURIComponent(hash.slice(PREFIXO_SETUP.length)) || null;
+    } catch {
+        return null;
+    }
+};
+
 const telaDaUrl = () => {
     if (faccaoDaUrl()) return 'faccao';
+    if (mesaDaUrl()) return 'setup';
     const tela = ROTAS_ANTIGAS[rotaDaUrl()] ?? rotaDaUrl();
     return TELAS_DA_URL.includes(tela) ? tela : 'criar';
 };
 
 function App() {
     const [tela, setTela] = useState(telaDaUrl); // 'criar', 'setup', 'partida', 'ranking', 'jogadores', 'faccoes', 'faccao' ou 'temporadas'
-    const [dadosMesa, setDadosMesa] = useState(null);
+    const [mesaId, setMesaId] = useState(mesaDaUrl);
     const [faccaoSelecionada, setFaccaoSelecionada] = useState(faccaoDaUrl);
     const [periodo, setPeriodo] = useState(periodoDaUrl);
     const [tipoRanking, setTipoRanking] = useState(tipoRankingDaUrl);
@@ -107,7 +122,7 @@ function App() {
     useEffect(() => {
         const rota = tela === 'faccao'
             ? `${PREFIXO_FACCAO}${encodeURIComponent(faccaoSelecionada)}`
-            : tela;
+            : tela === 'setup' ? `${PREFIXO_SETUP}${encodeURIComponent(mesaId)}` : tela;
         const params = new URLSearchParams();
         if (tela === 'ranking' && tipoRanking !== 'jogadores') params.set('tipo', tipoRanking);
         if (tela === 'jogadores' && jogadorSelecionado) params.set('jogador', jogadorSelecionado);
@@ -115,7 +130,7 @@ function App() {
         // ":" de "salvo:<id>" fica legível na URL; a leitura aceita as duas formas
         const consulta = params.toString().replace(/%3A/gi, ':');
         window.history.replaceState(null, '', `#${rota}${consulta ? `?${consulta}` : ''}`);
-    }, [tela, faccaoSelecionada, periodoAtivo, tipoRanking, jogadorSelecionado]);
+    }, [tela, faccaoSelecionada, mesaId, periodoAtivo, tipoRanking, jogadorSelecionado]);
 
     const recarregarSalvos = useCallback(async () => {
         atualizarSalvos(await apiService.listarPeriodosSalvos());
@@ -140,8 +155,8 @@ function App() {
         }
     }), [salvos, erroSalvos, recarregarSalvos]);
 
-    const irParaSetup = (dados) => {
-        setDadosMesa(dados);
+    const irParaSetup = (id) => {
+        setMesaId(id);
         setTela('setup');
     };
 
@@ -195,7 +210,9 @@ function App() {
             case 'criar':
                 return <CriarMesa onContinuar={irParaSetup} />;
             case 'setup':
-                return <SetupMesa dadosMesa={dadosMesa} onVoltar={voltarParaCriar} />;
+                return mesaId
+                    ? <SetupMesa key={mesaId} mesaId={mesaId} onVoltar={voltarParaCriar} />
+                    : <CriarMesa onContinuar={irParaSetup} />;
             case 'partida':
                 return <RegistrarPartida />;
             case 'ranking':
