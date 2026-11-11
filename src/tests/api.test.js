@@ -136,7 +136,7 @@ describe('API Service', () => {
     it('given an unknown table when reading it then throws with status 404', async () => {
       globalThis.fetch.mockResolvedValueOnce({ ok: false, status: 404, text: async () => '' });
 
-      await expect(apiService.obterMesa('naoexiste')).rejects.toMatchObject({ status: 404, message: 'Mesa não encontrada' });
+      await expect(apiService.obterMesa('naoexiste')).rejects.toMatchObject({ status: 404, message: 'Sessão não encontrada' });
     });
   });
 

@@ -40,7 +40,7 @@ export default function CriarMesa({ onContinuar }) {
             const mesa = await apiService.criarMesa({ data, jogo, quantidade: parseInt(quantidade) });
             onContinuar(mesa.id);
         } catch (error) {
-            setErro(`Não foi possível criar a mesa: ${error.message}`);
+            setErro(`Não foi possível criar a sessão: ${error.message}`);
             setCriando(false);
         }
     };
@@ -53,7 +53,7 @@ export default function CriarMesa({ onContinuar }) {
         <div className="cartao-criar-mesa">
             {!mostraResumo ? (
                 <>
-                    <h1>Criar Nova Mesa</h1>
+                    <h1>Criar Nova Sessão</h1>
                     <p>Preencha os dados para organizar sua partida</p>
 
                     <form onSubmit={handleSubmit}>
@@ -100,7 +100,7 @@ export default function CriarMesa({ onContinuar }) {
                 </>
             ) : (
                 <>
-                    <h1>Resumo da Mesa</h1>
+                    <h1>Resumo da Sessão</h1>
                     <div className="resumo-mesa">
                         <div className="resumo-item">
                             <span className="resumo-label">📅 Data:</span>

@@ -38,7 +38,7 @@ export default function SetupMesa({ mesaId, onVoltar }) {
             if (versao.current === versaoNoInicio) aplicarMesa(atual);
         } catch (error) {
             if (error.status === 404) setNaoEncontrada(true);
-            else setErroCarregar(`Não foi possível atualizar a mesa: ${error.message}`);
+            else setErroCarregar(`Não foi possível atualizar a sessão: ${error.message}`);
         }
     }, [mesaId, aplicarMesa]);
 
@@ -179,11 +179,11 @@ export default function SetupMesa({ mesaId, onVoltar }) {
     if (naoEncontrada) {
         return (
             <div className="cartao-setup">
-                <h2>Mesa não encontrada</h2>
-                <p>O link pode estar errado ou incompleto. Peça o link de novo a quem criou a mesa.</p>
+                <h2>Sessão não encontrada</h2>
+                <p>O link pode estar errado ou incompleto. Peça o link de novo a quem criou a sessão.</p>
                 {onVoltar && (
                     <button onClick={onVoltar} className="btn-voltar">
-                        ← Criar uma mesa
+                        ← Criar uma sessão
                     </button>
                 )}
             </div>
@@ -193,7 +193,7 @@ export default function SetupMesa({ mesaId, onVoltar }) {
     if (!mesa) {
         return (
             <div className="cartao-setup">
-                {erroCarregar ? <p role="alert">⚠️ {erroCarregar}</p> : <p>⏳ Carregando mesa...</p>}
+                {erroCarregar ? <p role="alert">⚠️ {erroCarregar}</p> : <p>⏳ Carregando sessão...</p>}
             </div>
         );
     }

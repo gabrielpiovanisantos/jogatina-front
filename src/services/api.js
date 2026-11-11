@@ -81,7 +81,7 @@ const copiaMesaMock = (mesa) => ({ ...mesa, players: mesa.players.map(p => ({ ..
 
 const mesaMockOu404 = (id) => {
   const mesa = mesasMock.get(id);
-  if (!mesa) throw erroHttp(404, 'Mesa não encontrada');
+  if (!mesa) throw erroHttp(404, 'Sessão não encontrada');
   return mesa;
 };
 
@@ -97,8 +97,8 @@ const chamarMesa = async (caminho, method = 'GET', corpo) => {
   });
 
   if (!response.ok) {
-    const errorMsg = response.status === 404 ? 'Mesa não encontrada' : await response.text();
-    throw erroHttp(response.status, errorMsg || `Erro ${response.status} na mesa`);
+    const errorMsg = response.status === 404 ? 'Sessão não encontrada' : await response.text();
+    throw erroHttp(response.status, errorMsg || `Erro ${response.status} na sessão`);
   }
 
   return await response.json();

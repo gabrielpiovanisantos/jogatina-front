@@ -254,7 +254,7 @@ function App() {
                     className={`nav-button ${tela === 'criar' ? 'active' : ''}`}
                     onClick={() => setTela('criar')}
                 >
-                    🎲 Criar Mesa
+                    🎲 Criar Sessão
                 </button>
                 <button
                     className={`nav-button ${tela === 'partida' ? 'active' : ''}`}

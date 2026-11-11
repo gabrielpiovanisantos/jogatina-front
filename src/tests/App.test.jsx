@@ -126,7 +126,7 @@ describe('App faction navigation', () => {
     window.history.replaceState(null, '', '#jogadores?periodo=12m');
     render(<App />);
 
-    await userEvent.click(screen.getByRole('button', { name: /Criar Mesa/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Criar Sessão/i }));
 
     expect(window.location.hash).toBe('#criar');
   });
@@ -275,7 +275,7 @@ describe('App ranking tab', () => {
     render(<App />);
     await screen.findByRole('button', { name: 'Aliança da Floresta' });
 
-    await userEvent.click(screen.getByRole('button', { name: /Criar Mesa/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Criar Sessão/i }));
 
     expect(window.location.hash).toBe('#criar');
   });
@@ -607,7 +607,7 @@ describe('App shared table', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
     await userEvent.click(screen.getByRole('button', { name: /Confirmar e Continuar/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível criar a mesa: Erro 500');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível criar a sessão: Erro 500');
     expect(window.location.hash).toBe('#criar');
   });
 });

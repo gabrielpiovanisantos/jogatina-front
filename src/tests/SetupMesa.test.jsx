@@ -93,10 +93,10 @@ describe('SetupMesa component', () => {
   });
 
   it('given an unknown table id when rendering then says the table was not found', async () => {
-    apiService.obterMesa.mockRejectedValue(erroHttp(404, 'Mesa não encontrada'));
+    apiService.obterMesa.mockRejectedValue(erroHttp(404, 'Sessão não encontrada'));
     render(<SetupMesa mesaId="naoexiste" onVoltar={mockOnVoltar} />);
 
-    expect(await screen.findByText('Mesa não encontrada')).toBeInTheDocument();
+    expect(await screen.findByText('Sessão não encontrada')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/Nome do jogador/i)).not.toBeInTheDocument();
   });
 
